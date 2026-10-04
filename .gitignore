@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Cache & generated data
+data/clips.db
+data/thumbs/
+/tmp/video-analyzer-frames/
+
+# macOS
+.DS_Store
+
+# Streamlit
+.streamlit/
+
+# Editor
+.vscode/
+.idea/
