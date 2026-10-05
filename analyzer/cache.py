@@ -151,6 +151,14 @@ def get_all_clips(usable_only: bool = False, db_path: Path = DB_PATH) -> list[di
     return [dict(r) for r in rows]
 
 
+def delete_clip(clip_id: int, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM clip_group_members WHERE clip_id = ?", (clip_id,))
+    conn.execute("DELETE FROM clips WHERE id = ?", (clip_id,))
+    conn.commit()
+    conn.close()
+
+
 def get_pending_clips(db_path: Path = DB_PATH) -> list[dict]:
     conn = get_connection(db_path)
     rows = conn.execute("SELECT * FROM clips WHERE analyzed_at IS NULL").fetchall()
@@ -382,6 +390,13 @@ def update_group_analysis(group_id: int, arc: str, edit_notes: str,
                WHERE group_id = ? AND clip_id = ?""",
             (t.get("note", ""), group_id, t.get("from_clip"))
         )
+    conn.commit()
+    conn.close()
+
+
+def rename_group(group_id: int, name: str, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute("UPDATE clip_groups SET name = ? WHERE id = ?", (name, group_id))
     conn.commit()
     conn.close()
 
