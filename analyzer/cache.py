@@ -6,6 +6,9 @@ from datetime import datetime
 
 DB_PATH = Path(__file__).parent.parent / "data" / "clips.db"
 
+BASE_CATEGORIES = ["travel", "b-roll", "portrait", "action", "golden-hour",
+                   "food", "architecture", "nature", "other"]
+
 
 def init_db(db_path: Path = DB_PATH):
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,6 +59,35 @@ def init_db(db_path: Path = DB_PATH):
             relevance_to_travel TEXT,
             popularity TEXT,
             view_indicator TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS custom_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            color TEXT DEFAULT '#888888',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS clip_groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            group_type TEXT DEFAULT 'custom',
+            description TEXT,
+            arc TEXT,
+            edit_notes TEXT,
+            analyzed_at TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS clip_group_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id INTEGER NOT NULL,
+            clip_id INTEGER NOT NULL,
+            position INTEGER DEFAULT 0,
+            transition_note TEXT,
+            FOREIGN KEY(group_id) REFERENCES clip_groups(id) ON DELETE CASCADE,
+            FOREIGN KEY(clip_id) REFERENCES clips(id),
+            UNIQUE(group_id, clip_id)
         );
     """)
     conn.commit()
@@ -202,6 +234,162 @@ def save_trends(trends: list[dict], db_path: Path = DB_PATH):
                 t.get("popularity"), t.get("view_indicator"),
             )
         )
+    conn.commit()
+    conn.close()
+
+
+# ── Custom categories ─────────────────────────────────────────────────────────
+
+def get_custom_categories(db_path: Path = DB_PATH) -> list[dict]:
+    conn = get_connection(db_path)
+    rows = conn.execute("SELECT * FROM custom_categories ORDER BY name").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def add_custom_category(name: str, color: str = "#888888", db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO custom_categories (name, color, created_at) VALUES (?, ?, ?)",
+            (name.lower().strip(), color, datetime.now().isoformat())
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # already exists
+    conn.close()
+
+
+def delete_custom_category(name: str, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM custom_categories WHERE name = ?", (name,))
+    conn.commit()
+    conn.close()
+
+
+def set_clip_category(clip_id: int, category: str, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute("UPDATE clips SET category = ? WHERE id = ?", (category, clip_id))
+    conn.commit()
+    conn.close()
+
+
+# ── Groups ────────────────────────────────────────────────────────────────────
+
+def create_group(name: str, group_type: str = "custom", description: str = "",
+                 db_path: Path = DB_PATH) -> int:
+    conn = get_connection(db_path)
+    cur = conn.execute(
+        "INSERT INTO clip_groups (name, group_type, description, created_at) VALUES (?, ?, ?, ?)",
+        (name, group_type, description, datetime.now().isoformat())
+    )
+    group_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return group_id
+
+
+def get_groups(db_path: Path = DB_PATH) -> list[dict]:
+    conn = get_connection(db_path)
+    rows = conn.execute("SELECT * FROM clip_groups ORDER BY created_at DESC").fetchall()
+    groups = []
+    for row in rows:
+        g = dict(row)
+        count = conn.execute(
+            "SELECT COUNT(*) as n FROM clip_group_members WHERE group_id = ?", (g["id"],)
+        ).fetchone()["n"]
+        g["clip_count"] = count
+        groups.append(g)
+    conn.close()
+    return groups
+
+
+def get_group(group_id: int, db_path: Path = DB_PATH) -> dict | None:
+    conn = get_connection(db_path)
+    row = conn.execute("SELECT * FROM clip_groups WHERE id = ?", (group_id,)).fetchone()
+    if not row:
+        conn.close()
+        return None
+    g = dict(row)
+    members = conn.execute(
+        """SELECT m.position, m.transition_note, c.*
+           FROM clip_group_members m
+           JOIN clips c ON c.id = m.clip_id
+           WHERE m.group_id = ?
+           ORDER BY m.position""",
+        (group_id,)
+    ).fetchall()
+    g["clips"] = [dict(r) for r in members]
+    conn.close()
+    return g
+
+
+def add_clip_to_group(group_id: int, clip_id: int, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    max_pos = conn.execute(
+        "SELECT COALESCE(MAX(position), -1) as p FROM clip_group_members WHERE group_id = ?",
+        (group_id,)
+    ).fetchone()["p"]
+    try:
+        conn.execute(
+            "INSERT INTO clip_group_members (group_id, clip_id, position) VALUES (?, ?, ?)",
+            (group_id, clip_id, max_pos + 1)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # already in group
+    conn.close()
+
+
+def remove_clip_from_group(group_id: int, clip_id: int, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute(
+        "DELETE FROM clip_group_members WHERE group_id = ? AND clip_id = ?",
+        (group_id, clip_id)
+    )
+    conn.commit()
+    # re-number positions
+    members = conn.execute(
+        "SELECT id FROM clip_group_members WHERE group_id = ? ORDER BY position", (group_id,)
+    ).fetchall()
+    for i, m in enumerate(members):
+        conn.execute("UPDATE clip_group_members SET position = ? WHERE id = ?", (i, m["id"]))
+    conn.commit()
+    conn.close()
+
+
+def reorder_group(group_id: int, clip_ids_ordered: list[int], db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    for i, clip_id in enumerate(clip_ids_ordered):
+        conn.execute(
+            "UPDATE clip_group_members SET position = ? WHERE group_id = ? AND clip_id = ?",
+            (i, group_id, clip_id)
+        )
+    conn.commit()
+    conn.close()
+
+
+def update_group_analysis(group_id: int, arc: str, edit_notes: str,
+                          transitions: list[dict], db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute(
+        "UPDATE clip_groups SET arc = ?, edit_notes = ?, analyzed_at = ? WHERE id = ?",
+        (arc, edit_notes, datetime.now().isoformat(), group_id)
+    )
+    for t in transitions:
+        conn.execute(
+            """UPDATE clip_group_members SET transition_note = ?
+               WHERE group_id = ? AND clip_id = ?""",
+            (t.get("note", ""), group_id, t.get("from_clip"))
+        )
+    conn.commit()
+    conn.close()
+
+
+def delete_group(group_id: int, db_path: Path = DB_PATH):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM clip_group_members WHERE group_id = ?", (group_id,))
+    conn.execute("DELETE FROM clip_groups WHERE id = ?", (group_id,))
     conn.commit()
     conn.close()
 
