@@ -20,7 +20,13 @@ st.set_page_config(page_title="Footage", layout="wide", page_icon="🎬",
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Epilogue:wght@300;400;500;600&display=swap');
-#MainMenu,footer,header,.stDeployButton{display:none!important}
+#MainMenu{visibility:hidden!important}
+footer{visibility:hidden!important}
+.stDeployButton{display:none!important}
+header[data-testid="stHeader"]{background:var(--bg)!important;border-bottom:1px solid var(--border)!important}
+/* hide the top-right toolbar items but keep sidebar toggle */
+[data-testid="stToolbar"]{display:none!important}
+[data-testid="stDecoration"]{display:none!important}
 :root{
   --bg:#0C0D10;--bg-alt:#101115;--surface:#14151B;--surface-2:#1D1F28;--surface-3:#272A36;
   --border:#22242E;--border-s:#191B23;--accent:#C9A74A;
