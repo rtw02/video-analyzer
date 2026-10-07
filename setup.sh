@@ -23,5 +23,6 @@ pip install -q -r requirements.txt
 
 echo ""
 echo "Setup complete."
-echo "Run the dashboard:"
-echo "  cd '$DIR' && source venv/bin/activate && streamlit run app.py"
+echo "Run the app:"
+echo "  cd '$DIR' && source venv/bin/activate && python server.py"
+echo "  Then open: http://localhost:7842"

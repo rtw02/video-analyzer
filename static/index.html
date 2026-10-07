@@ -1,0 +1,1116 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Footage</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Epilogue:wght@300;400;500;600&display=swap">
+<style>
+:root {
+  --bg:        #0C0D10;
+  --bg-alt:    #101115;
+  --surface:   #14151B;
+  --surface-2: #1D1F28;
+  --surface-3: #272A36;
+  --border:    #22242E;
+  --border-soft:#191B23;
+  --accent:    #C9A74A;
+  --accent-lo: rgba(201,167,74,.12);
+  --accent-lo2:rgba(201,167,74,.06);
+  --text:      #E8E5DF;
+  --text-2:    #A8ABBA;
+  --text-3:    #5C606E;
+  --good:      #5DBB8A;
+  --warn:      #D98C3E;
+  --bad:       #CC4E4E;
+  --tt:  #00D4CE;
+  --ig:  #C264B8;
+  --yt:  #E03333;
+}
+:root[data-theme="light"] {
+  --bg:#F2F0EC;--bg-alt:#E8E5DF;--surface:#FAFAF8;--surface-2:#EDEBE6;
+  --surface-3:#E2DFD9;--border:#D8D5CE;--border-soft:#E4E1DA;
+  --accent:#9A7B28;--accent-lo:rgba(154,123,40,.1);--accent-lo2:rgba(154,123,40,.05);
+  --text:#16161A;--text-2:#5A5D68;--text-3:#A8AABA;
+  --good:#2A9E66;--warn:#B8671C;--bad:#B03030;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilogue',system-ui,sans-serif;font-size:13px;line-height:1.5;overflow:hidden}
+
+.shell{display:grid;grid-template-columns:176px 1fr;grid-template-rows:52px 1fr;height:100%}
+
+/* Rail */
+.rail{grid-row:1/-1;background:var(--bg-alt);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0 0 12px;overflow:hidden}
+.wordmark{height:52px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--border-soft);flex-shrink:0}
+.wordmark-text{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:500;letter-spacing:.01em;color:var(--text)}
+.wordmark-text em{font-style:italic;color:var(--accent)}
+.rail-nav{padding:16px 10px 0;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:4px;cursor:pointer;color:var(--text-2);font-size:12.5px;font-weight:400;transition:color .12s,background .12s;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--surface-2)}
+.nav-item.on{color:var(--text);background:var(--surface-2)}
+.nav-item.on .nav-icon{color:var(--accent)}
+.nav-icon{font-size:13px;width:16px;flex-shrink:0;text-align:center}
+.nav-count{margin-left:auto;font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.rail-sep{height:1px;background:var(--border-soft);margin:14px 14px}
+.rail-sect{padding:0 10px;flex:1;overflow-y:auto}
+.cat-row{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--text-2);transition:all .1s}
+.cat-row:hover{color:var(--text);background:var(--surface-2)}
+.cat-row.on{color:var(--text);background:var(--surface-2)}
+.cat-pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cat-n{margin-left:auto;font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.quality-summary{margin:12px 10px 0;padding:11px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface)}
+.qs-head{font-size:10px;color:var(--text-3);margin-bottom:8px}
+.qs-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.qs-label{font-size:10px;width:32px;text-align:right}
+.qs-track{flex:1;height:3px;background:var(--surface-3);border-radius:1px;overflow:hidden}
+.qs-fill{height:100%}
+.qs-n{font-size:10px;color:var(--text-3);width:16px;font-variant-numeric:tabular-nums}
+
+/* Topbar */
+.topbar{background:var(--bg-alt);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 20px;position:relative}
+.folder-pill{display:flex;align-items:center;gap:8px;flex:1;max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:12px;color:var(--text-2)}
+.folder-input{flex:1;background:transparent;border:none;outline:none;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder-input::placeholder{color:var(--text-3)}
+.folder-icon{color:var(--text-3);font-size:12px;flex-shrink:0}
+.tb-btn{padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .1s;white-space:nowrap}
+.tb-btn:hover{background:var(--surface-2);color:var(--text)}
+.tb-btn.primary{background:var(--accent);border-color:var(--accent);color:#0C0D10}
+.tb-btn.primary:hover{filter:brightness(1.08)}
+.tb-btn:disabled{opacity:.5;cursor:not-allowed}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.status-tag{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);padding:4px 10px;border:1px solid var(--border);border-radius:4px}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 5px var(--good);flex-shrink:0}
+.icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;color:var(--text-3);font-size:13px;transition:all .1s}
+.icon-btn:hover{color:var(--text);background:var(--surface-2)}
+.scan-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);display:none}
+.scan-bar.active{display:block}
+.scan-fill{height:100%;background:var(--accent);width:0%;border-radius:0 1px 1px 0}
+
+/* Main */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.view-bar{display:flex;align-items:center;gap:6px;padding:8px 20px;border-bottom:1px solid var(--border-soft);flex-shrink:0}
+.view-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;letter-spacing:.01em;color:var(--text);margin-right:6px}
+.pill-filter{padding:3px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-3);cursor:pointer;background:transparent;transition:all .1s}
+.pill-filter:hover{color:var(--text-2);border-color:var(--surface-3)}
+.pill-filter.on{background:var(--accent-lo);border-color:rgba(201,167,74,.3);color:var(--accent)}
+.sort-ctrl{margin-left:auto;font-size:11px;color:var(--text-3);cursor:pointer;display:flex;align-items:center;gap:4px}
+.scroll{flex:1;overflow-y:auto;padding:16px 20px 24px}
+.view{display:none;flex-direction:column;flex:1;overflow:hidden}
+.view.on{display:flex}
+
+/* Library grid */
+.cat-section{margin-bottom:28px}
+.cat-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;font-weight:400;color:var(--text);letter-spacing:.01em;margin-bottom:12px;display:flex;align-items:baseline;gap:12px}
+.cat-title-line{flex:1;height:1px;background:var(--border-soft);position:relative;top:-3px}
+.cat-n-label{font-family:'Epilogue',sans-serif;font-size:10px;font-style:normal;color:var(--text-3)}
+.clip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px}
+
+/* Film frame */
+.frame{background:var(--surface);border:1px solid var(--border-soft);cursor:pointer;position:relative;overflow:hidden}
+.frame::before{content:'';display:block;height:3px;width:100%;position:absolute;top:0;left:0;z-index:2}
+.frame.q-hi::before{background:var(--good)}
+.frame.q-mid::before{background:var(--warn)}
+.frame.q-lo::before{background:var(--bad)}
+.frame.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.frame.unusable{opacity:.5}
+.frame-thumb{width:100%;aspect-ratio:16/9;background:var(--surface-2);display:block;overflow:hidden;position:relative}
+.frame-thumb img,.frame-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
+.frame-dur{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.9);padding:1px 4px;border-radius:2px;font-variant-numeric:tabular-nums;z-index:1}
+.frame-meta{padding:6px 8px 7px}
+.frame-name{font-size:11px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);margin-bottom:3px}
+.frame-tags{display:flex;gap:3px;flex-wrap:wrap}
+.tag{font-size:9px;padding:1px 5px;border-radius:2px;font-weight:500}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-3)}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--text-2)}
+.empty-sub{font-size:12px;text-align:center;line-height:1.6;max-width:280px}
+
+/* Detail panel — no CSS transform transition, GSAP handles it */
+.detail-panel{position:fixed;top:52px;right:0;bottom:0;width:280px;background:var(--bg-alt);border-left:1px solid var(--border);transform:translateX(100%);display:flex;flex-direction:column;z-index:50;will-change:transform}
+.dp-head{padding:14px 16px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:flex-start;gap:10px}
+.dp-thumb-wrap{width:88px;aspect-ratio:16/9;background:var(--surface-2);border-radius:2px;overflow:hidden;flex-shrink:0}
+.dp-thumb-wrap img,.dp-thumb-wrap canvas{width:100%;height:100%;display:block;object-fit:cover}
+.dp-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px}
+.dp-sub{font-size:10px;color:var(--text-3);margin-bottom:6px}
+.dp-qs{display:flex;align-items:center;gap:5px;font-size:10px}
+.dp-qs-bar{flex:1;height:3px;background:var(--surface-3);border-radius:1px;overflow:hidden}
+.dp-qs-fill{height:100%}
+.dp-close{margin-left:auto;cursor:pointer;color:var(--text-3);font-size:16px;line-height:1;flex-shrink:0;margin-top:-2px}
+.dp-close:hover{color:var(--text-2)}
+.dp-body{padding:14px 16px;flex:1;overflow-y:auto}
+.dp-row{display:flex;gap:4px;margin-bottom:4px;font-size:11px}
+.dp-lbl{color:var(--text-3);width:56px;flex-shrink:0}
+.dp-val{color:var(--text-2)}
+.dp-note{margin-top:10px;padding:9px 10px;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;font-size:11px;color:var(--text-2);line-height:1.5;font-style:italic}
+.dp-actions{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.dp-action{width:100%;padding:7px;background:var(--accent-lo);border:1px solid rgba(201,167,74,.25);border-radius:4px;color:var(--accent);font-family:'Epilogue',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:background .1s}
+.dp-action:hover{background:rgba(201,167,74,.2)}
+.dp-action.danger{background:rgba(204,78,78,.08);border-color:rgba(204,78,78,.2);color:var(--bad)}
+.dp-action.danger:hover{background:rgba(204,78,78,.15)}
+
+/* Proposals */
+.proposals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.prop-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;padding:14px 16px;overflow:hidden}
+.prop-card:hover{border-color:var(--surface-3)}
+.prop-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.plat-badge{font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 6px;border-radius:2px;white-space:nowrap;margin-top:2px}
+.plat-tt{background:rgba(0,212,206,.1);color:var(--tt)}
+.plat-ig{background:rgba(194,100,184,.1);color:var(--ig)}
+.plat-yt{background:rgba(224,51,51,.1);color:var(--yt)}
+.plat-ys{background:rgba(224,51,51,.08);color:var(--yt)}
+.prop-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;line-height:1.25;flex:1}
+.prop-dur{font-size:10px;color:var(--text-3);margin-bottom:6px}
+.prop-hook{font-size:11px;color:var(--text-2);border-left:2px solid var(--accent);padding-left:8px;margin-bottom:9px;line-height:1.45;font-style:italic}
+.prop-storyboard{display:flex;gap:3px;margin-bottom:10px}
+.prop-sb-frame{width:44px;height:25px;border-radius:1px;overflow:hidden;flex-shrink:0;background:var(--surface-2)}
+.prop-sb-frame img{width:100%;height:100%;display:block;object-fit:cover}
+.prop-sb-more{width:28px;height:25px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-3);background:var(--surface-2);border-radius:1px;flex-shrink:0}
+.prop-actions{display:flex;gap:5px}
+.prop-btn{flex:1;padding:5px 0;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;cursor:pointer;transition:all .1s}
+.prop-btn:hover{background:var(--surface-2);color:var(--text-2)}
+.prop-btn.saved{border-color:rgba(201,167,74,.3);background:var(--accent-lo);color:var(--accent)}
+.prop-btn.copied{border-color:rgba(93,187,138,.3);background:rgba(93,187,138,.1);color:var(--good)}
+
+/* Caption modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;width:480px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column}
+.modal-head{padding:14px 16px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:8px}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;flex:1}
+.modal-close{cursor:pointer;color:var(--text-3);font-size:16px;transition:color .1s}
+.modal-close:hover{color:var(--text-2)}
+.modal-body{padding:14px 16px;overflow-y:auto;flex:1}
+.caption-text{font-size:12px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:10px 12px;margin-bottom:10px;font-family:'Epilogue',sans-serif}
+.hashtag-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+.htag{font-size:10px;padding:2px 7px;background:var(--accent-lo);border:1px solid rgba(201,167,74,.2);border-radius:12px;color:var(--accent)}
+.modal-foot{padding:10px 16px;border-top:1px solid var(--border-soft);display:flex;justify-content:flex-end;gap:6px}
+.modal-btn{padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;cursor:pointer;transition:all .1s}
+.modal-btn:hover{background:var(--surface-2);color:var(--text)}
+.modal-btn.primary{background:var(--accent);border-color:var(--accent);color:#0C0D10}
+.modal-btn.primary:hover{filter:brightness(1.08)}
+.modal-btn.success{background:rgba(93,187,138,.15);border-color:rgba(93,187,138,.3);color:var(--good)}
+
+/* Trends */
+.trends-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.trend-col-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;font-style:italic;margin-bottom:10px;color:var(--text)}
+.trend-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;padding:10px 12px;margin-bottom:6px;transition:border-color .1s}
+.trend-card:hover{border-color:var(--surface-3)}
+.trend-card-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.trend-plat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.trend-pop{font-size:9px;margin-left:auto}
+.trend-pop.hot{color:var(--bad)}
+.trend-pop.rising{color:var(--warn)}
+.trend-pop.stable{color:var(--good)}
+.trend-desc{font-size:11px;color:var(--text-2);line-height:1.45;margin-bottom:4px}
+.trend-apply{font-size:10px;color:var(--accent);font-style:italic}
+.trend-views{font-size:9px;color:var(--text-3);margin-top:4px}
+.trends-search{display:flex;gap:8px;margin-bottom:18px}
+.trends-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:7px 12px;color:var(--text);font-family:'Epilogue',sans-serif;font-size:12px;outline:none}
+.trends-input::placeholder{color:var(--text-3)}
+.trends-input:focus{border-color:rgba(201,167,74,.35)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="wordmark"><span class="wordmark-text"><em>F</em>ootage</span></div>
+    <nav class="rail-nav">
+      <div class="nav-item on" data-view="library">
+        <span class="nav-icon">▦</span> Library <span class="nav-count" id="nc-library">0</span>
+      </div>
+      <div class="nav-item" data-view="proposals">
+        <span class="nav-icon">✦</span> Proposals <span class="nav-count" id="nc-proposals">0</span>
+      </div>
+      <div class="nav-item" data-view="trends">
+        <span class="nav-icon">↗</span> Trends <span class="nav-count" id="nc-trends">0</span>
+      </div>
+    </nav>
+    <div class="rail-sep"></div>
+    <div class="rail-sect" id="cat-filter-list"></div>
+    <div class="quality-summary" id="quality-summary" style="display:none">
+      <div class="qs-head">Quality distribution</div>
+      <div class="qs-row">
+        <div class="qs-label" style="color:var(--good)">High</div>
+        <div class="qs-track"><div class="qs-fill" id="qs-hi" style="background:var(--good)"></div></div>
+        <div class="qs-n" id="qs-hi-n">0</div>
+      </div>
+      <div class="qs-row">
+        <div class="qs-label" style="color:var(--warn)">Mid</div>
+        <div class="qs-track"><div class="qs-fill" id="qs-mid" style="background:var(--warn)"></div></div>
+        <div class="qs-n" id="qs-mid-n">0</div>
+      </div>
+      <div class="qs-row">
+        <div class="qs-label" style="color:var(--bad)">Low</div>
+        <div class="qs-track"><div class="qs-fill" id="qs-lo" style="background:var(--bad)"></div></div>
+        <div class="qs-n" id="qs-lo-n">0</div>
+      </div>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div class="folder-pill">
+      <span class="folder-icon">▸</span>
+      <input class="folder-input" id="folder-input" placeholder="Enter video folder path…" spellcheck="false">
+    </div>
+    <button class="tb-btn" id="scan-btn">Scan</button>
+    <button class="tb-btn primary" id="propose-btn">Propose</button>
+    <div class="tb-right">
+      <div class="status-tag"><span class="pulse" id="pulse-dot"></span><span id="status-text">Ready</span></div>
+      <button class="icon-btn" id="theme-btn" title="Toggle theme">◑</button>
+    </div>
+    <div class="scan-bar" id="scan-bar"><div class="scan-fill" id="scan-fill"></div></div>
+  </header>
+
+  <main class="main">
+    <!-- Library -->
+    <div id="v-library" class="view on">
+      <div class="view-bar">
+        <span class="view-title">Library</span>
+        <button class="pill-filter on" data-filter="all">All</button>
+        <button class="pill-filter" data-filter="usable">Usable only</button>
+        <span class="sort-ctrl" id="sort-ctrl">Quality ↓</span>
+      </div>
+      <div class="scroll" id="library-scroll">
+        <div id="library-content"></div>
+      </div>
+    </div>
+
+    <!-- Proposals -->
+    <div id="v-proposals" class="view">
+      <div class="view-bar">
+        <span class="view-title">Proposals</span>
+        <button class="pill-filter on" data-plat="all">All</button>
+        <button class="pill-filter" data-plat="tiktok">TikTok</button>
+        <button class="pill-filter" data-plat="reels">Reels</button>
+        <button class="pill-filter" data-plat="youtube">YouTube</button>
+      </div>
+      <div class="scroll">
+        <div class="proposals-grid" id="proposals-grid"></div>
+      </div>
+    </div>
+
+    <!-- Trends -->
+    <div id="v-trends" class="view">
+      <div class="view-bar">
+        <span class="view-title">Trends</span>
+        <span id="trends-age" style="font-size:10px;color:var(--text-3);margin-left:4px"></span>
+        <button class="pill-filter" style="margin-left:auto" id="fetch-trends-btn">Fetch latest</button>
+      </div>
+      <div class="scroll">
+        <div class="trends-search">
+          <input class="trends-input" id="trends-search-input" placeholder="Research a trend, sound, or format…">
+          <button class="tb-btn primary" id="trends-search-btn">Search</button>
+        </div>
+        <div class="trends-grid" id="trends-content"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-panel" id="dp">
+  <div class="dp-head">
+    <div class="dp-thumb-wrap" id="dp-thumb-wrap"></div>
+    <div style="flex:1;min-width:0">
+      <div class="dp-title" id="dp-title">—</div>
+      <div class="dp-sub" id="dp-sub">—</div>
+      <div class="dp-qs">
+        <span style="font-size:10px;color:var(--text-3)">Quality</span>
+        <div class="dp-qs-bar"><div class="dp-qs-fill" id="dp-qs-fill"></div></div>
+        <span id="dp-qs-score" style="font-size:11px;font-weight:500;font-variant-numeric:tabular-nums"></span>
+      </div>
+    </div>
+    <span class="dp-close" id="dp-close">✕</span>
+  </div>
+  <div class="dp-body">
+    <div class="dp-row"><span class="dp-lbl">Mood</span><span class="dp-val" id="dp-mood">—</span></div>
+    <div class="dp-row"><span class="dp-lbl">Scene</span><span class="dp-val" id="dp-scene">—</span></div>
+    <div class="dp-row"><span class="dp-lbl">Lighting</span><span class="dp-val" id="dp-light">—</span></div>
+    <div class="dp-row"><span class="dp-lbl">Resolution</span><span class="dp-val" id="dp-res">—</span></div>
+    <div class="dp-note" id="dp-note">—</div>
+    <div class="dp-actions">
+      <button class="dp-action" id="dp-reanalyze-btn">Re-analyze</button>
+      <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
+    </div>
+  </div>
+</div>
+
+<!-- Caption modal -->
+<div class="modal-overlay" id="caption-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Caption</div>
+      <span class="modal-close" id="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="caption-text" id="modal-caption"></div>
+      <div class="hashtag-row" id="modal-hashtags"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn" id="modal-close-btn">Close</button>
+      <button class="modal-btn primary" id="copy-btn">Copy caption</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let ALL_CLIPS = [];
+let CLIP_MAP = {};
+let activeDetail = null;
+let _captionFull = '';
+let _scanning = false;
+let _detailOpen = false;
+let _currentLibFilter = 'all';
+let _currentUsableFilter = 'all';
+
+// ── Category colors ────────────────────────────────────────────────────────────
+const CAT_COLORS = {
+  'travel':       '#58A6FF',
+  'golden-hour':  '#C9A74A',
+  'b-roll':       '#7A7D8A',
+  'action':       '#D98C3E',
+  'nature':       '#5DBB8A',
+  'portrait':     '#C264B8',
+  'food':         '#E07850',
+  'architecture': '#8A9FFF',
+  'other':        '#5C606E',
+};
+function catColor(cat) {
+  return CAT_COLORS[cat] || '#7A7D8A';
+}
+function catTagStyle(cat) {
+  const c = catColor(cat);
+  const rgb = hexToRgb(c);
+  return `background:rgba(${rgb},0.12);color:${c}`;
+}
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+// ── Platform badge ─────────────────────────────────────────────────────────────
+function platBadge(platform) {
+  const map = {
+    'tiktok':         ['TIKTOK',  'plat-tt'],
+    'reels':          ['REELS',   'plat-ig'],
+    'youtube':        ['YOUTUBE', 'plat-yt'],
+    'youtube-shorts': ['SHORTS',  'plat-ys'],
+  };
+  const [label, cls] = map[platform] || [platform.toUpperCase(), 'plat-yt'];
+  return `<span class="plat-badge ${cls}">${label}</span>`;
+}
+
+// ── Quality class ──────────────────────────────────────────────────────────────
+function qClass(qs) {
+  return qs >= 7 ? 'q-hi' : qs >= 5 ? 'q-mid' : 'q-lo';
+}
+function qColor(qs) {
+  return qs >= 7 ? 'var(--good)' : qs >= 5 ? 'var(--warn)' : 'var(--bad)';
+}
+
+// ── Thumbnail ──────────────────────────────────────────────────────────────────
+function thumbEl(clip, w, h) {
+  if (clip.has_thumb) {
+    const img = document.createElement('img');
+    img.src = `/api/clips/${clip.id}/thumb`;
+    img.loading = 'lazy';
+    img.onerror = () => { img.replaceWith(fallbackCanvas(w, h, clip)); };
+    return img;
+  }
+  return fallbackCanvas(w, h, clip);
+}
+function fallbackCanvas(w, h, clip) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  // simple gradient based on category color
+  const c = catColor(clip.category);
+  const rgb = hexToRgb(c);
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, `rgba(${rgb},0.25)`);
+  g.addColorStop(1, `rgba(${rgb},0.05)`);
+  ctx.fillStyle = '#14151B';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  // vignette
+  const vg = ctx.createRadialGradient(w*.5,h*.5,h*.1,w*.5,h*.5,w*.7);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
+  return cv;
+}
+
+// ── Build library ──────────────────────────────────────────────────────────────
+function buildLibrary(clips) {
+  const content = document.getElementById('library-content');
+  content.innerHTML = '';
+
+  const filtered = _currentUsableFilter === 'usable' ? clips.filter(c => c.is_usable) : clips;
+
+  if (filtered.length === 0) {
+    content.innerHTML = `<div class="empty-state">
+      <div class="empty-title">No clips yet</div>
+      <div class="empty-sub">Enter a folder path and click Scan to analyze your video files.</div>
+    </div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  for (const clip of filtered) {
+    const cat = clip.category || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(clip);
+  }
+
+  const sections = [];
+  for (const [cat, catClips] of Object.entries(groups)) {
+    const section = document.createElement('div');
+    section.className = 'cat-section';
+    section.dataset.cat = cat;
+
+    const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    section.innerHTML = `
+      <div class="cat-title">${label} <span class="cat-n-label">${catClips.length} clips</span><span class="cat-title-line"></span></div>
+      <div class="clip-grid"></div>`;
+
+    const grid = section.querySelector('.clip-grid');
+    for (const clip of catClips) {
+      const card = buildCard(clip);
+      grid.appendChild(card);
+    }
+    content.appendChild(section);
+    sections.push(section);
+  }
+
+  // GSAP stagger entrance
+  const cards = content.querySelectorAll('.frame');
+  gsap.from(cards, { opacity: 0, y: 8, duration: 0.35, stagger: 0.025, ease: 'power2.out', clearProps: 'all' });
+}
+
+function buildCard(clip) {
+  const card = document.createElement('div');
+  card.className = `frame ${qClass(clip.quality_score)}${!clip.is_usable ? ' unusable' : ''}`;
+  card.dataset.id = clip.id;
+  card.dataset.cat = clip.category;
+
+  const thumb = document.createElement('div');
+  thumb.className = 'frame-thumb';
+  thumb.appendChild(thumbEl(clip, 240, 135));
+  const dur = document.createElement('div');
+  dur.className = 'frame-dur';
+  dur.textContent = clip.duration_str;
+  thumb.appendChild(dur);
+
+  const meta = document.createElement('div');
+  meta.className = 'frame-meta';
+  meta.innerHTML = `
+    <div class="frame-name">${clip.name}</div>
+    <div class="frame-tags">
+      <span class="tag" style="${catTagStyle(clip.category)}">${clip.category}</span>
+      ${clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
+    </div>`;
+
+  card.appendChild(thumb);
+  card.appendChild(meta);
+  card.addEventListener('click', () => openDetail(card, clip.id));
+  return card;
+}
+
+// ── Category filter sidebar ───────────────────────────────────────────────────
+function buildCatFilter(clips) {
+  const list = document.getElementById('cat-filter-list');
+  list.innerHTML = '';
+
+  const total = clips.length;
+  const groups = {};
+  for (const c of clips) {
+    const cat = c.category || 'other';
+    groups[cat] = (groups[cat] || 0) + 1;
+  }
+
+  const allRow = document.createElement('div');
+  allRow.className = 'cat-row on';
+  allRow.dataset.cat = 'all';
+  allRow.innerHTML = `<span class="cat-pip" style="background:#555"></span>All <span class="cat-n">${total}</span>`;
+  list.appendChild(allRow);
+
+  for (const [cat, n] of Object.entries(groups)) {
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.dataset.cat = cat;
+    const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    row.innerHTML = `<span class="cat-pip" style="background:${catColor(cat)}"></span>${label} <span class="cat-n">${n}</span>`;
+    list.appendChild(row);
+  }
+
+  list.querySelectorAll('.cat-row').forEach(row => {
+    row.addEventListener('click', () => {
+      list.querySelectorAll('.cat-row').forEach(r => r.classList.remove('on'));
+      row.classList.add('on');
+      _currentLibFilter = row.dataset.cat;
+      filterLibrarySections();
+    });
+  });
+}
+
+function filterLibrarySections() {
+  const sections = document.querySelectorAll('.cat-section');
+  sections.forEach(s => {
+    const match = _currentLibFilter === 'all' || s.dataset.cat === _currentLibFilter;
+    if (match) {
+      gsap.to(s, { opacity: 1, height: 'auto', duration: 0.2, display: 'block', ease: 'power2.out' });
+    } else {
+      gsap.to(s, { opacity: 0, height: 0, duration: 0.18, ease: 'power2.in', onComplete: () => s.style.display = 'none' });
+    }
+  });
+}
+
+// ── Quality summary ────────────────────────────────────────────────────────────
+function buildQualitySummary(clips) {
+  const hi = clips.filter(c => c.quality_score >= 7).length;
+  const mid = clips.filter(c => c.quality_score >= 5 && c.quality_score < 7).length;
+  const lo = clips.filter(c => c.quality_score < 5).length;
+  const total = clips.length || 1;
+  document.getElementById('qs-hi').style.width = (hi/total*100) + '%';
+  document.getElementById('qs-mid').style.width = (mid/total*100) + '%';
+  document.getElementById('qs-lo').style.width = (lo/total*100) + '%';
+  document.getElementById('qs-hi-n').textContent = hi;
+  document.getElementById('qs-mid-n').textContent = mid;
+  document.getElementById('qs-lo-n').textContent = lo;
+  document.getElementById('quality-summary').style.display = clips.length ? '' : 'none';
+}
+
+// ── Load clips from API ────────────────────────────────────────────────────────
+async function loadClips() {
+  const res = await fetch('/api/clips');
+  const data = await res.json();
+  ALL_CLIPS = data.clips;
+  CLIP_MAP = {};
+  for (const c of ALL_CLIPS) CLIP_MAP[c.id] = c;
+  const usable = ALL_CLIPS.filter(c => c.is_usable).length;
+  document.getElementById('nc-library').textContent = ALL_CLIPS.length;
+  document.getElementById('status-text').textContent = ALL_CLIPS.length
+    ? `${ALL_CLIPS.length} clips · ${usable} usable`
+    : 'Ready';
+  buildLibrary(ALL_CLIPS);
+  buildCatFilter(ALL_CLIPS);
+  buildQualitySummary(ALL_CLIPS);
+}
+
+// ── Detail panel ───────────────────────────────────────────────────────────────
+function openDetail(card, clipId) {
+  const clip = CLIP_MAP[clipId];
+  if (!clip) return;
+
+  document.querySelectorAll('.frame').forEach(f => f.classList.remove('sel'));
+  card.classList.add('sel');
+  activeDetail = clipId;
+
+  document.getElementById('dp-title').textContent = clip.name;
+  const fps = clip.resolution ? '' : '';
+  document.getElementById('dp-sub').textContent =
+    `${clip.duration_str} · ${clip.res_display || clip.resolution}`;
+  document.getElementById('dp-mood').textContent = clip.mood || '—';
+  document.getElementById('dp-scene').textContent = clip.scene_type || '—';
+  document.getElementById('dp-light').textContent = clip.lighting || '—';
+  document.getElementById('dp-res').textContent = clip.resolution || '—';
+  document.getElementById('dp-note').textContent = clip.notes || '—';
+
+  const fill = document.getElementById('dp-qs-fill');
+  const color = qColor(clip.quality_score);
+  fill.style.width = (clip.quality_score * 10) + '%';
+  fill.style.background = color;
+  document.getElementById('dp-qs-score').textContent = clip.quality_score + '/10';
+  document.getElementById('dp-qs-score').style.color = color;
+
+  // thumbnail
+  const wrap = document.getElementById('dp-thumb-wrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(thumbEl(clip, 176, 99));
+
+  // button data
+  document.getElementById('dp-reanalyze-btn').dataset.id = clipId;
+  document.getElementById('dp-delete-btn').dataset.id = clipId;
+
+  const dp = document.getElementById('dp');
+  if (!_detailOpen) {
+    _detailOpen = true;
+    gsap.to(dp, { x: 0, duration: 0.22, ease: 'power3.out' });
+  }
+}
+
+function closeDetail() {
+  if (!_detailOpen) return;
+  _detailOpen = false;
+  document.querySelectorAll('.frame').forEach(f => f.classList.remove('sel'));
+  activeDetail = null;
+  const dp = document.getElementById('dp');
+  gsap.to(dp, { x: 280, duration: 0.18, ease: 'power2.in' });
+}
+
+document.getElementById('dp-close').addEventListener('click', closeDetail);
+
+document.getElementById('dp-reanalyze-btn').addEventListener('click', async () => {
+  const id = document.getElementById('dp-reanalyze-btn').dataset.id;
+  if (!id) return;
+  const btn = document.getElementById('dp-reanalyze-btn');
+  btn.textContent = 'Analyzing…';
+  btn.disabled = true;
+  const es = new EventSource(`/api/clips/${id}/reanalyze`);
+  // EventSource only supports GET; use fetch+ReadableStream instead
+  es.close();
+
+  const res = await fetch(`/api/clips/${id}/reanalyze`, { method: 'POST' });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const evt = JSON.parse(line.slice(5).trim());
+      if (evt.type === 'complete') {
+        await loadClips();
+        if (activeDetail == id) openDetail(document.querySelector(`.frame[data-id="${id}"]`), id);
+      }
+    }
+  }
+  btn.textContent = 'Re-analyze';
+  btn.disabled = false;
+});
+
+document.getElementById('dp-delete-btn').addEventListener('click', async () => {
+  const id = document.getElementById('dp-delete-btn').dataset.id;
+  if (!id) return;
+  const clip = CLIP_MAP[id];
+  if (!confirm(`Delete ${clip?.name || 'this clip'} from the library?`)) return;
+  await fetch(`/api/clips/${id}`, { method: 'DELETE' });
+  closeDetail();
+  await loadClips();
+});
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const view = item.dataset.view;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+    document.getElementById('v-' + view).classList.add('on');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
+    item.classList.add('on');
+    closeDetail();
+    if (view === 'proposals') loadProposals();
+    if (view === 'trends') loadTrends();
+  });
+});
+
+// Library pill filters
+document.querySelectorAll('#v-library .pill-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#v-library .pill-filter').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    _currentUsableFilter = btn.dataset.filter;
+    buildLibrary(ALL_CLIPS);
+    buildCatFilter(ALL_CLIPS.filter(c => _currentUsableFilter === 'usable' ? c.is_usable : true));
+  });
+});
+
+// ── Scan ───────────────────────────────────────────────────────────────────────
+document.getElementById('scan-btn').addEventListener('click', async () => {
+  if (_scanning) return;
+  const folder = document.getElementById('folder-input').value.trim();
+  if (!folder) {
+    document.getElementById('folder-input').focus();
+    return;
+  }
+  _scanning = true;
+  const btn = document.getElementById('scan-btn');
+  const bar = document.getElementById('scan-bar');
+  const fill = document.getElementById('scan-fill');
+  const status = document.getElementById('status-text');
+  const pulse = document.getElementById('pulse-dot');
+
+  btn.disabled = true;
+  btn.textContent = 'Scanning…';
+  bar.classList.add('active');
+  gsap.set(fill, { width: '0%' });
+  pulse.style.background = 'var(--warn)';
+  pulse.style.boxShadow = '0 0 5px var(--warn)';
+
+  // Save folder to localStorage
+  try { localStorage.setItem('footage_folder', folder); } catch(e) {}
+
+  const res = await fetch('/api/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder })
+  });
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let total = 1;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      let evt;
+      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
+      if (evt.type === 'start') {
+        total = evt.total || 1;
+        status.textContent = `Found ${evt.total} video${evt.total !== 1 ? 's' : ''}…`;
+      } else if (evt.type === 'analyzing') {
+        const pct = ((evt.index - 1) / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
+        status.textContent = `Analyzing ${evt.file}…`;
+      } else if (evt.type === 'cached') {
+        const pct = (evt.index / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
+        status.textContent = `Cached: ${evt.file}`;
+      } else if (evt.type === 'done') {
+        const pct = (evt.index / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
+        status.textContent = `Done: ${evt.file}`;
+        await loadClips();
+      } else if (evt.type === 'complete') {
+        gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
+          setTimeout(() => {
+            bar.classList.remove('active');
+            gsap.set(fill, { width: '0%' });
+          }, 1200);
+        }});
+        pulse.style.background = 'var(--good)';
+        pulse.style.boxShadow = '0 0 5px var(--good)';
+        await loadClips();
+        const usable = ALL_CLIPS.filter(c => c.is_usable).length;
+        status.textContent = `${ALL_CLIPS.length} clips · ${usable} usable`;
+        btn.disabled = false;
+        btn.textContent = 'Scan';
+        _scanning = false;
+      }
+    }
+  }
+});
+
+// ── Proposals ─────────────────────────────────────────────────────────────────
+async function loadProposals() {
+  const res = await fetch('/api/proposals');
+  const data = await res.json();
+  const props = data.proposals || [];
+  document.getElementById('nc-proposals').textContent = props.length;
+  renderProposals(props);
+}
+
+function renderProposals(props) {
+  const grid = document.getElementById('proposals-grid');
+  grid.innerHTML = '';
+
+  const platFilter = document.querySelector('#v-proposals .pill-filter.on')?.dataset.plat || 'all';
+  const filtered = platFilter === 'all' ? props : props.filter(p => p.platform === platFilter || (platFilter === 'youtube' && p.platform === 'youtube-shorts'));
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-title">No proposals yet</div>
+      <div class="empty-sub">Click Propose to generate social media video ideas from your clips.</div>
+    </div>`;
+    return;
+  }
+
+  for (const p of filtered) {
+    const card = buildProposalCard(p);
+    grid.appendChild(card);
+  }
+
+  gsap.from(grid.querySelectorAll('.prop-card'), { opacity: 0, y: 10, duration: 0.3, stagger: 0.06, ease: 'power2.out', clearProps: 'all' });
+}
+
+function buildProposalCard(p) {
+  const card = document.createElement('div');
+  card.className = 'prop-card';
+  card.dataset.id = p.id;
+  card.dataset.platform = p.platform;
+
+  // storyboard strips
+  const sbFrames = p.clip_ids.slice(0, 4).map(cid => {
+    const clip = CLIP_MAP[cid];
+    const frame = document.createElement('div');
+    frame.className = 'prop-sb-frame';
+    if (clip) {
+      const img = document.createElement('img');
+      img.src = `/api/clips/${cid}/thumb`;
+      img.loading = 'lazy';
+      img.onerror = () => img.style.display = 'none';
+      frame.appendChild(img);
+    }
+    return frame.outerHTML;
+  }).join('');
+  const sbMore = p.clip_ids.length > 4
+    ? `<div class="prop-sb-more">+${p.clip_ids.length - 4}</div>` : '';
+
+  const savedClass = p.status === 'saved' ? 'saved' : '';
+  const savedLabel = p.status === 'saved' ? 'Saved' : 'Save';
+  const hashtagStr = (p.hashtags || []).join(' ');
+
+  card.innerHTML = `
+    <div class="prop-header">
+      ${platBadge(p.platform)}
+      <div class="prop-title">${p.title || '—'}</div>
+    </div>
+    <div class="prop-dur">${p.estimated_duration || ''} · ${p.vibe || ''}</div>
+    <div class="prop-hook">"${p.hook_text || ''}"</div>
+    <div class="prop-storyboard">${sbFrames}${sbMore}</div>
+    <div class="prop-actions">
+      <button class="prop-btn ${savedClass}" data-action="save">${savedLabel}</button>
+      <button class="prop-btn" data-action="caption">Caption</button>
+      <button class="prop-btn" data-action="dismiss">Dismiss</button>
+    </div>`;
+
+  card.querySelector('[data-action="save"]').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const isSaved = btn.classList.contains('saved');
+    const newStatus = isSaved ? 'active' : 'saved';
+    await fetch(`/api/proposals/${p.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    btn.classList.toggle('saved', !isSaved);
+    btn.textContent = isSaved ? 'Save' : 'Saved';
+  });
+
+  card.querySelector('[data-action="caption"]').addEventListener('click', () => {
+    openCaption(p.title, p.caption, hashtagStr);
+  });
+
+  card.querySelector('[data-action="dismiss"]').addEventListener('click', async () => {
+    await fetch(`/api/proposals/${p.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'dismissed' })
+    });
+    gsap.to(card, {
+      opacity: 0, height: 0, padding: 0, margin: 0, borderWidth: 0,
+      duration: 0.3, ease: 'power2.in', onComplete: () => card.remove()
+    });
+  });
+
+  return card;
+}
+
+// Proposals platform filter
+document.querySelectorAll('#v-proposals .pill-filter').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    document.querySelectorAll('#v-proposals .pill-filter').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    const res = await fetch('/api/proposals');
+    const data = await res.json();
+    renderProposals(data.proposals || []);
+  });
+});
+
+// Propose button
+document.getElementById('propose-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('propose-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  document.getElementById('status-text').textContent = 'Generating proposals…';
+
+  const res = await fetch('/api/proposals/generate', { method: 'POST' });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      let evt;
+      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
+      if (evt.type === 'complete') {
+        await loadProposals();
+        document.getElementById('status-text').textContent = `${ALL_CLIPS.length} clips · ${ALL_CLIPS.filter(c=>c.is_usable).length} usable`;
+      }
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = 'Propose';
+});
+
+// ── Caption modal ──────────────────────────────────────────────────────────────
+function openCaption(title, body, tags) {
+  _captionFull = body || '';
+  document.getElementById('modal-title').textContent = title || 'Caption';
+  document.getElementById('modal-caption').textContent = body || '';
+  const hrow = document.getElementById('modal-hashtags');
+  hrow.innerHTML = '';
+  (tags || '').split(/\s+/).filter(Boolean).forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'htag';
+    span.textContent = '#' + t.replace(/^#/, '');
+    hrow.appendChild(span);
+  });
+  const copyBtn = document.getElementById('copy-btn');
+  copyBtn.textContent = 'Copy caption';
+  copyBtn.className = 'modal-btn primary';
+  const overlay = document.getElementById('caption-modal');
+  gsap.set(overlay, { display: 'flex' });
+  gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'power2.out' });
+  overlay.classList.add('open');
+}
+
+function closeCaption() {
+  const overlay = document.getElementById('caption-modal');
+  gsap.to(overlay, { opacity: 0, duration: 0.12, ease: 'power2.in', onComplete: () => {
+    overlay.classList.remove('open');
+    gsap.set(overlay, { display: 'none' });
+  }});
+}
+
+document.getElementById('modal-close').addEventListener('click', closeCaption);
+document.getElementById('modal-close-btn').addEventListener('click', closeCaption);
+document.getElementById('caption-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCaption(); });
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const btn = document.getElementById('copy-btn');
+  const tags = Array.from(document.getElementById('modal-hashtags').querySelectorAll('.htag')).map(h => h.textContent).join(' ');
+  const full = _captionFull + '\n\n' + tags;
+  navigator.clipboard.writeText(full).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.className = 'modal-btn success';
+    setTimeout(() => { btn.textContent = 'Copy caption'; btn.className = 'modal-btn primary'; }, 2000);
+  }).catch(() => {
+    btn.textContent = '✓ Copied';
+    btn.className = 'modal-btn success';
+    setTimeout(() => { btn.textContent = 'Copy caption'; btn.className = 'modal-btn primary'; }, 2000);
+  });
+});
+
+// ── Trends ─────────────────────────────────────────────────────────────────────
+async function loadTrends() {
+  const res = await fetch('/api/trends');
+  const data = await res.json();
+  const trends = data.trends || [];
+  const age = data.age;
+  document.getElementById('nc-trends').textContent = trends.length;
+  const ageEl = document.getElementById('trends-age');
+  ageEl.textContent = age ? `Updated ${age}` : '';
+  renderTrends(trends);
+}
+
+function renderTrends(trends) {
+  const content = document.getElementById('trends-content');
+  content.innerHTML = '';
+  if (trends.length === 0) {
+    content.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-title">No trends cached</div>
+      <div class="empty-sub">Click "Fetch latest" to search for current social media trends.</div>
+    </div>`;
+    return;
+  }
+
+  const formats = trends.filter(t => ['format','hook'].includes(t.category));
+  const sounds = trends.filter(t => ['sound','effect'].includes(t.category));
+  const rest = trends.filter(t => !['format','hook','sound','effect'].includes(t.category));
+
+  const col1 = document.createElement('div');
+  const col2 = document.createElement('div');
+  col1.innerHTML = '<div class="trend-col-title">Formats & Hooks</div>';
+  col2.innerHTML = '<div class="trend-col-title">Sounds & Effects</div>';
+
+  const platColor = (p) => ({ tiktok:'var(--tt)', reels:'var(--ig)', 'youtube-shorts':'var(--yt)', all:'var(--text-3)' })[p] || 'var(--text-3)';
+  const popClass = (pop) => ({ trending:'hot', rising:'rising', established:'stable' })[pop] || 'stable';
+  const popLabel = (pop) => ({ trending:'🔥 trending', rising:'↑ rising', established:'● established' })[pop] || pop;
+
+  const trendCard = (t) => `
+    <div class="trend-card">
+      <div class="trend-card-name">
+        <span class="trend-plat-dot" style="background:${platColor(t.platform)}"></span>
+        ${t.name || ''}
+        <span class="trend-pop ${popClass(t.popularity)}">${popLabel(t.popularity)}</span>
+      </div>
+      <div class="trend-desc">${t.description || ''}</div>
+      ${t.relevance_to_travel ? `<div class="trend-apply">→ ${t.relevance_to_travel}</div>` : ''}
+      ${t.view_indicator ? `<div class="trend-views">${t.view_indicator}</div>` : ''}
+    </div>`;
+
+  [...formats, ...rest.slice(0, 3)].forEach(t => col1.innerHTML += trendCard(t));
+  [...sounds, ...rest.slice(3)].forEach(t => col2.innerHTML += trendCard(t));
+  content.appendChild(col1);
+  content.appendChild(col2);
+
+  gsap.from(content.querySelectorAll('.trend-card'), { opacity: 0, y: 6, duration: 0.3, stagger: 0.04, ease: 'power2.out', clearProps: 'all' });
+}
+
+document.getElementById('fetch-trends-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('fetch-trends-btn');
+  btn.textContent = 'Fetching…';
+  btn.disabled = true;
+  const res = await fetch('/api/trends/fetch', { method: 'POST' });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      let evt;
+      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
+      if (evt.type === 'complete') await loadTrends();
+    }
+  }
+  btn.textContent = 'Fetch latest';
+  btn.disabled = false;
+});
+
+// ── Theme ──────────────────────────────────────────────────────────────────────
+document.getElementById('theme-btn').addEventListener('click', () => {
+  const r = document.documentElement;
+  const c = r.getAttribute('data-theme');
+  r.setAttribute('data-theme', c === 'light' ? '' : 'light');
+  try { localStorage.setItem('footage_theme', r.getAttribute('data-theme')); } catch(e) {}
+});
+
+// ── Keyboard ───────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeCaption(); }
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+// Set detail panel off-screen without transition flash
+gsap.set('#dp', { x: 280 });
+// Hide caption modal
+gsap.set('#caption-modal', { display: 'none', opacity: 0 });
+
+// Restore theme
+try {
+  const t = localStorage.getItem('footage_theme');
+  if (t) document.documentElement.setAttribute('data-theme', t);
+} catch(e) {}
+
+// Restore folder
+try {
+  const f = localStorage.getItem('footage_folder');
+  if (f) document.getElementById('folder-input').value = f;
+} catch(e) {}
+
+loadClips();
+</script>
+</body>
+</html>

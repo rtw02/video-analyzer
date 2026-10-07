@@ -13,9 +13,6 @@ data/thumbs/
 # macOS
 .DS_Store
 
-# Streamlit
-.streamlit/
-
 # Editor
 .vscode/
 .idea/
