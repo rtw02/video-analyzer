@@ -140,15 +140,36 @@ def upsert_clip(clip_data: dict, db_path: Path = DB_PATH):
     conn.close()
 
 
-def get_all_clips(usable_only: bool = False, db_path: Path = DB_PATH) -> list[dict]:
+def get_all_clips(usable_only: bool = False, analyzed_only: bool = False,
+                  db_path: Path = DB_PATH) -> list[dict]:
     conn = get_connection(db_path)
-    query = "SELECT * FROM clips WHERE analyzed_at IS NOT NULL"
+    conditions = []
+    if analyzed_only:
+        conditions.append("analyzed_at IS NOT NULL")
     if usable_only:
-        query += " AND is_usable = 1"
-    query += " ORDER BY quality_score DESC"
+        conditions.append("is_usable = 1")
+    query = "SELECT * FROM clips"
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY COALESCE(quality_score, 0) DESC, filename ASC"
     rows = conn.execute(query).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def update_clip_manual(clip_id: int, fields: dict, db_path: Path = DB_PATH):
+    """Save manually entered metadata for a clip."""
+    allowed = {"category", "quality_score", "scene_type", "mood", "lighting",
+               "is_usable", "notes", "analyzed_at"}
+    data = {k: v for k, v in fields.items() if k in allowed}
+    if not data:
+        return
+    sets = ", ".join(f"{k} = :{k}" for k in data)
+    data["id"] = clip_id
+    conn = get_connection(db_path)
+    conn.execute(f"UPDATE clips SET {sets} WHERE id = :id", data)
+    conn.commit()
+    conn.close()
 
 
 def delete_clip(clip_id: int, db_path: Path = DB_PATH):

@@ -111,8 +111,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .frame.q-hi::before{background:var(--good)}
 .frame.q-mid::before{background:var(--warn)}
 .frame.q-lo::before{background:var(--bad)}
+.frame.unreviewed::before{background:var(--surface-3)}
 .frame.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .frame.unusable{opacity:.5}
+.frame-analyze-btn{position:absolute;bottom:6px;left:6px;z-index:3;font-size:9px;padding:2px 7px;background:rgba(201,167,74,.18);border:1px solid rgba(201,167,74,.35);border-radius:2px;color:var(--accent);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:500;display:none;transition:background .1s}
+.frame:hover .frame-analyze-btn{display:block}
+.frame-analyze-btn:hover{background:rgba(201,167,74,.3)}
 .frame-thumb{width:100%;aspect-ratio:16/9;background:var(--surface-2);display:block;overflow:hidden;position:relative}
 .frame-thumb img,.frame-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
 .frame-dur{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.9);padding:1px 4px;border-radius:2px;font-variant-numeric:tabular-nums;z-index:1}
@@ -148,6 +152,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .dp-action:hover{background:rgba(201,167,74,.2)}
 .dp-action.danger{background:rgba(204,78,78,.08);border-color:rgba(204,78,78,.2);color:var(--bad)}
 .dp-action.danger:hover{background:rgba(204,78,78,.15)}
+.dp-action:disabled{opacity:.5;cursor:not-allowed}
+/* Editable fields */
+.dp-section{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-soft)}
+.dp-field{margin-bottom:8px}
+.dp-field-label{font-size:10px;color:var(--text-3);margin-bottom:3px}
+.dp-select,.dp-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:11px;outline:none}
+.dp-select:focus,.dp-input:focus{border-color:rgba(201,167,74,.4)}
+.dp-select option{background:var(--surface)}
+.dp-usable-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-2)}
+.dp-toggle{width:28px;height:16px;background:var(--surface-3);border-radius:8px;position:relative;cursor:pointer;border:none;flex-shrink:0;transition:background .15s}
+.dp-toggle.on{background:var(--good)}
+.dp-toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .15s}
+.dp-toggle.on::after{transform:translateX(12px)}
+.dp-unreviewed-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-3);padding:3px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
+.dp-unreviewed-badge span{width:6px;height:6px;border-radius:50%;background:var(--surface-3);flex-shrink:0}
 
 /* Proposals */
 .proposals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
@@ -330,13 +349,42 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     <span class="dp-close" id="dp-close">✕</span>
   </div>
   <div class="dp-body">
-    <div class="dp-row"><span class="dp-lbl">Mood</span><span class="dp-val" id="dp-mood">—</span></div>
-    <div class="dp-row"><span class="dp-lbl">Scene</span><span class="dp-val" id="dp-scene">—</span></div>
-    <div class="dp-row"><span class="dp-lbl">Lighting</span><span class="dp-val" id="dp-light">—</span></div>
-    <div class="dp-row"><span class="dp-lbl">Resolution</span><span class="dp-val" id="dp-res">—</span></div>
-    <div class="dp-note" id="dp-note">—</div>
+    <!-- Unreviewed badge (hidden when analyzed) -->
+    <div class="dp-unreviewed-badge" id="dp-unreviewed-badge" style="display:none">
+      <span></span>Not yet reviewed
+    </div>
+    <!-- Read-only fields (analyzed clips) -->
+    <div id="dp-readonly">
+      <div class="dp-row"><span class="dp-lbl">Mood</span><span class="dp-val" id="dp-mood">—</span></div>
+      <div class="dp-row"><span class="dp-lbl">Scene</span><span class="dp-val" id="dp-scene">—</span></div>
+      <div class="dp-row"><span class="dp-lbl">Lighting</span><span class="dp-val" id="dp-light">—</span></div>
+      <div class="dp-row"><span class="dp-lbl">Resolution</span><span class="dp-val" id="dp-res">—</span></div>
+      <div class="dp-note" id="dp-note" style="display:none">—</div>
+    </div>
+    <!-- Editable fields (always shown, pre-filled if analyzed) -->
+    <div class="dp-section" id="dp-edit-section">
+      <div class="dp-field">
+        <div class="dp-field-label">Category</div>
+        <select class="dp-select" id="dp-cat-select"></select>
+      </div>
+      <div class="dp-field">
+        <div class="dp-field-label">Quality <span id="dp-quality-display" style="color:var(--accent)"></span></div>
+        <input type="range" class="dp-input" id="dp-quality-range" min="1" max="10" step="1" style="padding:0;cursor:pointer">
+      </div>
+      <div class="dp-field">
+        <div class="dp-usable-row">
+          <button class="dp-toggle" id="dp-usable-toggle"></button>
+          <span id="dp-usable-label">Usable</span>
+        </div>
+      </div>
+      <div class="dp-field">
+        <div class="dp-field-label">Notes</div>
+        <input type="text" class="dp-input" id="dp-notes-input" placeholder="Add a note…">
+      </div>
+    </div>
     <div class="dp-actions">
-      <button class="dp-action" id="dp-reanalyze-btn">Re-analyze</button>
+      <button class="dp-action" id="dp-save-btn">Save</button>
+      <button class="dp-action" id="dp-analyze-btn">Analyze with Claude</button>
       <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
     </div>
   </div>
@@ -502,10 +550,13 @@ function buildLibrary(clips) {
 }
 
 function buildCard(clip) {
+  const analyzed = !!clip.quality_score;
+  const qc = analyzed ? qClass(clip.quality_score) : 'unreviewed';
   const card = document.createElement('div');
-  card.className = `frame ${qClass(clip.quality_score)}${!clip.is_usable ? ' unusable' : ''}`;
+  card.className = `frame ${qc}${!clip.is_usable ? ' unusable' : ''}`;
   card.dataset.id = clip.id;
   card.dataset.cat = clip.category;
+  card.dataset.analyzed = analyzed ? '1' : '0';
 
   const thumb = document.createElement('div');
   thumb.className = 'frame-thumb';
@@ -515,13 +566,26 @@ function buildCard(clip) {
   dur.textContent = clip.duration_str;
   thumb.appendChild(dur);
 
+  // Per-card analyze button (shows on hover for unanalyzed clips)
+  if (!analyzed) {
+    const analyzeBtn = document.createElement('button');
+    analyzeBtn.className = 'frame-analyze-btn';
+    analyzeBtn.textContent = 'Analyze';
+    analyzeBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      runClaudeAnalysis(clip.id, analyzeBtn);
+    });
+    thumb.appendChild(analyzeBtn);
+  }
+
   const meta = document.createElement('div');
   meta.className = 'frame-meta';
   meta.innerHTML = `
     <div class="frame-name">${clip.name}</div>
     <div class="frame-tags">
       <span class="tag" style="${catTagStyle(clip.category)}">${clip.category}</span>
-      ${clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
+      ${analyzed && clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
+      ${!analyzed ? `<span class="tag" style="background:rgba(92,96,110,.1);color:var(--text-3)">unreviewed</span>` : ''}
     </div>`;
 
   card.appendChild(thumb);
@@ -620,30 +684,52 @@ function openDetail(card, clipId) {
   card.classList.add('sel');
   activeDetail = clipId;
 
+  const analyzed = !!clip.quality_score;
+
   document.getElementById('dp-title').textContent = clip.name;
-  const fps = clip.resolution ? '' : '';
   document.getElementById('dp-sub').textContent =
-    `${clip.duration_str} · ${clip.res_display || clip.resolution}`;
+    `${clip.duration_str} · ${clip.res_display || clip.resolution || '—'}`;
+
+  // Unreviewed badge
+  document.getElementById('dp-unreviewed-badge').style.display = analyzed ? 'none' : '';
+
+  // Read-only fields
   document.getElementById('dp-mood').textContent = clip.mood || '—';
   document.getElementById('dp-scene').textContent = clip.scene_type || '—';
   document.getElementById('dp-light').textContent = clip.lighting || '—';
   document.getElementById('dp-res').textContent = clip.resolution || '—';
-  document.getElementById('dp-note').textContent = clip.notes || '—';
+  const noteEl = document.getElementById('dp-note');
+  if (clip.notes) { noteEl.textContent = clip.notes; noteEl.style.display = ''; }
+  else noteEl.style.display = 'none';
 
+  // Quality bar
   const fill = document.getElementById('dp-qs-fill');
-  const color = qColor(clip.quality_score);
-  fill.style.width = (clip.quality_score * 10) + '%';
+  const qs = clip.quality_score || 0;
+  const color = qs ? qColor(qs) : 'var(--surface-3)';
+  fill.style.width = (qs * 10) + '%';
   fill.style.background = color;
-  document.getElementById('dp-qs-score').textContent = clip.quality_score + '/10';
+  document.getElementById('dp-qs-score').textContent = qs ? qs + '/10' : '—';
   document.getElementById('dp-qs-score').style.color = color;
 
-  // thumbnail
+  // Thumbnail
   const wrap = document.getElementById('dp-thumb-wrap');
   wrap.innerHTML = '';
   wrap.appendChild(thumbEl(clip, 176, 99));
 
-  // button data
-  document.getElementById('dp-reanalyze-btn').dataset.id = clipId;
+  // Populate editable fields
+  populateCatSelect(clip.category);
+  const qRange = document.getElementById('dp-quality-range');
+  qRange.value = qs || 5;
+  document.getElementById('dp-quality-display').textContent = (qs || 5) + '/10';
+  const usableToggle = document.getElementById('dp-usable-toggle');
+  usableToggle.classList.toggle('on', clip.is_usable);
+  document.getElementById('dp-usable-label').textContent = clip.is_usable ? 'Usable' : 'Not usable';
+  document.getElementById('dp-notes-input').value = clip.notes || '';
+
+  // Button states
+  document.getElementById('dp-analyze-btn').dataset.id = clipId;
+  document.getElementById('dp-analyze-btn').textContent = analyzed ? 'Re-analyze with Claude' : 'Analyze with Claude';
+  document.getElementById('dp-save-btn').dataset.id = clipId;
   document.getElementById('dp-delete-btn').dataset.id = clipId;
 
   const dp = document.getElementById('dp');
@@ -651,6 +737,21 @@ function openDetail(card, clipId) {
     _detailOpen = true;
     gsap.to(dp, { x: 0, duration: 0.22, ease: 'power3.out' });
   }
+}
+
+function populateCatSelect(selected) {
+  const sel = document.getElementById('dp-cat-select');
+  if (sel.options.length === 0) {
+    // Build once; order: base then custom
+    const cats = [...(window._BASE_CATS || []), ...(window._CUSTOM_CATS || [])];
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c.replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+      sel.appendChild(opt);
+    });
+  }
+  sel.value = selected || 'other';
 }
 
 function closeDetail() {
@@ -664,17 +765,54 @@ function closeDetail() {
 
 document.getElementById('dp-close').addEventListener('click', closeDetail);
 
-document.getElementById('dp-reanalyze-btn').addEventListener('click', async () => {
-  const id = document.getElementById('dp-reanalyze-btn').dataset.id;
+// Quality range live display
+document.getElementById('dp-quality-range').addEventListener('input', e => {
+  document.getElementById('dp-quality-display').textContent = e.target.value + '/10';
+});
+
+// Usable toggle
+document.getElementById('dp-usable-toggle').addEventListener('click', function() {
+  this.classList.toggle('on');
+  document.getElementById('dp-usable-label').textContent =
+    this.classList.contains('on') ? 'Usable' : 'Not usable';
+});
+
+// Manual save
+document.getElementById('dp-save-btn').addEventListener('click', async () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
   if (!id) return;
-  const btn = document.getElementById('dp-reanalyze-btn');
+  const btn = document.getElementById('dp-save-btn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  await fetch(`/api/clips/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      category: document.getElementById('dp-cat-select').value,
+      quality_score: parseInt(document.getElementById('dp-quality-range').value),
+      is_usable: document.getElementById('dp-usable-toggle').classList.contains('on'),
+      notes: document.getElementById('dp-notes-input').value.trim() || null,
+    })
+  });
+  await loadClips();
+  const card = document.querySelector(`.frame[data-id="${id}"]`);
+  if (card) openDetail(card, parseInt(id));
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1500);
+});
+
+// Analyze with Claude
+document.getElementById('dp-analyze-btn').addEventListener('click', async () => {
+  const id = document.getElementById('dp-analyze-btn').dataset.id;
+  if (!id) return;
+  await runClaudeAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'));
+});
+
+async function runClaudeAnalysis(clipId, btn) {
+  const origText = btn.textContent;
   btn.textContent = 'Analyzing…';
   btn.disabled = true;
-  const es = new EventSource(`/api/clips/${id}/reanalyze`);
-  // EventSource only supports GET; use fetch+ReadableStream instead
-  es.close();
-
-  const res = await fetch(`/api/clips/${id}/reanalyze`, { method: 'POST' });
+  const res = await fetch(`/api/clips/${clipId}/reanalyze`, { method: 'POST' });
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   while (true) {
@@ -683,16 +821,17 @@ document.getElementById('dp-reanalyze-btn').addEventListener('click', async () =
     const lines = decoder.decode(value).split('\n');
     for (const line of lines) {
       if (!line.startsWith('data:')) continue;
-      const evt = JSON.parse(line.slice(5).trim());
+      let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
       if (evt.type === 'complete') {
         await loadClips();
-        if (activeDetail == id) openDetail(document.querySelector(`.frame[data-id="${id}"]`), id);
+        const card = document.querySelector(`.frame[data-id="${clipId}"]`);
+        if (card && activeDetail == clipId) openDetail(card, clipId);
       }
     }
   }
-  btn.textContent = 'Re-analyze';
+  btn.textContent = origText;
   btn.disabled = false;
-});
+}
 
 document.getElementById('dp-delete-btn').addEventListener('click', async () => {
   const id = document.getElementById('dp-delete-btn').dataset.id;
@@ -775,10 +914,10 @@ document.getElementById('scan-btn').addEventListener('click', async () => {
       if (evt.type === 'start') {
         total = evt.total || 1;
         status.textContent = `Found ${evt.total} video${evt.total !== 1 ? 's' : ''}…`;
-      } else if (evt.type === 'analyzing') {
+      } else if (evt.type === 'scanning') {
         const pct = ((evt.index - 1) / total) * 100;
         gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
-        status.textContent = `Analyzing ${evt.file}…`;
+        status.textContent = `Scanning ${evt.file}…`;
       } else if (evt.type === 'cached') {
         const pct = (evt.index / total) * 100;
         gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
@@ -1110,7 +1249,19 @@ try {
   if (f) document.getElementById('folder-input').value = f;
 } catch(e) {}
 
-loadClips();
+// Load categories then clips
+(async () => {
+  try {
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    window._BASE_CATS = data.base || [];
+    window._CUSTOM_CATS = (data.custom || []).map(c => c.name);
+  } catch(e) {
+    window._BASE_CATS = ['travel','b-roll','portrait','action','golden-hour','food','architecture','nature','other'];
+    window._CUSTOM_CATS = [];
+  }
+  loadClips();
+})();
 </script>
 </body>
 </html>

@@ -42,7 +42,7 @@ def get_video_metadata(video_path: str) -> dict:
     }
 
 
-def extract_frames(video_path: str, max_frames: int = 8) -> list[Path]:
+def extract_frames(video_path: str, max_frames: int = 3) -> list[Path]:
     FRAME_TMP_DIR.mkdir(parents=True, exist_ok=True)
 
     meta = get_video_metadata(video_path)
@@ -66,7 +66,7 @@ def extract_frames(video_path: str, max_frames: int = 8) -> list[Path]:
         cmd = [
             _ffmpeg(), "-y", "-ss", str(ts), "-i", str(video_path),
             "-frames:v", "1", "-q:v", "3",
-            "-vf", "scale=1024:-1",
+            "-vf", "scale=512:-2",
             str(out)
         ]
         result = subprocess.run(cmd, capture_output=True)

@@ -69,6 +69,27 @@ async def get_clips():
     return {"clips": [_fmt_clip(c) for c in clips]}
 
 
+class ManualUpdate(BaseModel):
+    category: str | None = None
+    quality_score: int | None = None
+    scene_type: str | None = None
+    mood: str | None = None
+    lighting: str | None = None
+    is_usable: bool | None = None
+    notes: str | None = None
+
+
+@app.patch("/api/clips/{clip_id}")
+async def update_clip_manual(clip_id: int, body: ManualUpdate):
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    if "is_usable" in fields:
+        fields["is_usable"] = int(fields["is_usable"])
+    if fields:
+        fields["analyzed_at"] = datetime.now().isoformat()
+        cache.update_clip_manual(clip_id, fields)
+    return {"ok": True}
+
+
 @app.get("/api/clips/{clip_id}/thumb")
 async def get_thumb(clip_id: int):
     conn = cache.get_connection()
@@ -169,14 +190,10 @@ async def scan(body: ScanBody):
                 await asyncio.sleep(0)
                 continue
 
-            yield f"data: {json.dumps({'type':'analyzing','file':video_path.name,'index':i+1,'total':total})}\n\n"
+            yield f"data: {json.dumps({'type':'scanning','file':video_path.name,'index':i+1,'total':total})}\n\n"
             try:
                 meta = await loop.run_in_executor(None, extractor.get_video_metadata, str(video_path))
                 await loop.run_in_executor(None, extractor.extract_thumbnail, str(video_path), thumb_dir, md5)
-                frame_paths = await loop.run_in_executor(None, extractor.extract_frames, str(video_path))
-                analysis = await loop.run_in_executor(
-                    None, lambda: claude_client.analyze_frames(frame_paths, custom_categories=custom_cats)
-                )
                 clip_data = {
                     "filepath": str(video_path),
                     "filename": video_path.name,
@@ -184,20 +201,19 @@ async def scan(body: ScanBody):
                     "duration_seconds": meta.get("duration_seconds"),
                     "resolution": meta.get("resolution"),
                     "file_size_mb": meta.get("file_size_mb"),
-                    "analyzed_at": datetime.now().isoformat(),
-                    "quality_score": analysis.get("quality_score"),
-                    "scene_type": analysis.get("scene_type"),
-                    "mood": analysis.get("mood"),
-                    "lighting": analysis.get("lighting"),
-                    "activities": json.dumps(analysis.get("activities", [])),
-                    "category": analysis.get("category"),
-                    "is_usable": int(analysis.get("is_usable", True)),
-                    "notes": analysis.get("notes"),
-                    "raw_analysis": json.dumps(analysis),
+                    "analyzed_at": None,
+                    "quality_score": None,
+                    "scene_type": None,
+                    "mood": None,
+                    "lighting": None,
+                    "activities": "[]",
+                    "category": "other",
+                    "is_usable": 1,
+                    "notes": None,
+                    "raw_analysis": None,
                 }
                 cache.upsert_clip(clip_data)
-                extractor.cleanup_frames(frame_paths)
-                yield f"data: {json.dumps({'type':'done','file':video_path.name,'index':i+1,'total':total,'category':analysis.get('category'),'quality_score':analysis.get('quality_score')})}\n\n"
+                yield f"data: {json.dumps({'type':'done','file':video_path.name,'index':i+1,'total':total})}\n\n"
             except Exception as e:
                 yield f"data: {json.dumps({'type':'error','file':video_path.name,'error':str(e),'index':i+1,'total':total})}\n\n"
             await asyncio.sleep(0)
@@ -232,7 +248,7 @@ async def get_proposals():
 
 @app.post("/api/proposals/generate")
 async def generate_proposals():
-    clips = cache.get_all_clips(usable_only=True)
+    clips = cache.get_all_clips(usable_only=True, analyzed_only=True)
     if not clips:
         raise HTTPException(400, "No analyzed clips")
 

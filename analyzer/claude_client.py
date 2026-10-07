@@ -188,7 +188,6 @@ def generate_proposals(clips: list[dict], count: int = 5, timeout: int = 120, tr
             "lighting": c.get("lighting"),
             "category": c.get("category"),
             "quality_score": c.get("quality_score"),
-            "activities": json.loads(c.get("activities") or "[]"),
             "notes": c.get("notes"),
         })
 
