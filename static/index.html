@@ -229,6 +229,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .trends-input::placeholder{color:var(--text-3)}
 .trends-input:focus{border-color:rgba(201,167,74,.35)}
 
+/* Analyze mode row */
+.dp-analyze-row{display:flex;gap:4px;margin-bottom:4px}
+.dp-analyze-row .dp-action{flex:1}
+.dp-mode-select{background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;padding:0 6px;cursor:pointer;outline:none;flex-shrink:0}
+.dp-mode-select:focus{border-color:rgba(201,167,74,.35)}
+.dp-mode-select option{background:var(--surface)}
+/* Tier status line */
+.dp-tier-status{font-size:10px;color:var(--text-3);margin-bottom:6px;min-height:14px;transition:color .15s}
+.dp-tier-status.ok{color:var(--good)}
+.dp-tier-status.warn{color:var(--warn)}
+/* Confirm bar */
+.dp-confirm-bar{background:var(--surface);border:1px solid rgba(201,167,74,.25);border-radius:4px;padding:9px 10px;margin-bottom:6px;display:none}
+.dp-confirm-text{font-size:11px;color:var(--text-2);margin-bottom:7px;line-height:1.45}
+.dp-confirm-btns{display:flex;gap:5px}
+.dp-confirm-yes{flex:1;padding:5px 0;background:var(--accent-lo);border:1px solid rgba(201,167,74,.3);border-radius:3px;color:var(--accent);font-family:'Epilogue',sans-serif;font-size:10px;font-weight:500;cursor:pointer}
+.dp-confirm-yes:hover{background:rgba(201,167,74,.2)}
+.dp-confirm-no{flex:1;padding:5px 0;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;cursor:pointer}
+.dp-confirm-no:hover{background:var(--surface-2);color:var(--text-2)}
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -384,7 +402,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     </div>
     <div class="dp-actions">
       <button class="dp-action" id="dp-save-btn">Save</button>
-      <button class="dp-action" id="dp-analyze-btn">Analyze with Claude</button>
+      <div class="dp-tier-status" id="dp-tier-status"></div>
+      <div class="dp-confirm-bar" id="dp-confirm-bar">
+        <div class="dp-confirm-text">OpenCV + CLIP couldn't categorize this confidently. Use Claude text analysis? (~250 tokens)</div>
+        <div class="dp-confirm-btns">
+          <button class="dp-confirm-yes" id="dp-confirm-yes">Use Claude</button>
+          <button class="dp-confirm-no" id="dp-confirm-no">Skip</button>
+        </div>
+      </div>
+      <div class="dp-analyze-row">
+        <button class="dp-action" id="dp-analyze-btn">Analyze</button>
+        <select class="dp-mode-select" id="dp-mode-select" title="Analysis mode">
+          <option value="auto">Auto</option>
+          <option value="cv">OpenCV</option>
+          <option value="clip">CLIP</option>
+          <option value="claude_text">Claude text</option>
+          <option value="claude_full">Claude full</option>
+        </select>
+      </div>
       <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
     </div>
   </div>
@@ -728,7 +763,10 @@ function openDetail(card, clipId) {
 
   // Button states
   document.getElementById('dp-analyze-btn').dataset.id = clipId;
-  document.getElementById('dp-analyze-btn').textContent = analyzed ? 'Re-analyze with Claude' : 'Analyze with Claude';
+  document.getElementById('dp-analyze-btn').textContent = analyzed ? 'Re-analyze' : 'Analyze';
+  document.getElementById('dp-tier-status').textContent = '';
+  document.getElementById('dp-tier-status').className = 'dp-tier-status';
+  document.getElementById('dp-confirm-bar').style.display = 'none';
   document.getElementById('dp-save-btn').dataset.id = clipId;
   document.getElementById('dp-delete-btn').dataset.id = clipId;
 
@@ -801,18 +839,55 @@ document.getElementById('dp-save-btn').addEventListener('click', async () => {
   setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1500);
 });
 
-// Analyze with Claude
+// Analyze button — reads mode from the select
 document.getElementById('dp-analyze-btn').addEventListener('click', async () => {
   const id = document.getElementById('dp-analyze-btn').dataset.id;
   if (!id) return;
-  await runClaudeAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'));
+  const mode = document.getElementById('dp-mode-select').value;
+  await runAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'), mode);
 });
 
+// Confirmation bar buttons
+document.getElementById('dp-confirm-yes').addEventListener('click', async () => {
+  const id = document.getElementById('dp-analyze-btn').dataset.id;
+  if (!id) return;
+  document.getElementById('dp-confirm-bar').style.display = 'none';
+  await runAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'), 'claude_text');
+});
+document.getElementById('dp-confirm-no').addEventListener('click', () => {
+  document.getElementById('dp-confirm-bar').style.display = 'none';
+  const statusEl = document.getElementById('dp-tier-status');
+  statusEl.textContent = 'Skipped — categorize manually above.';
+  statusEl.className = 'dp-tier-status warn';
+});
+
+// Legacy alias kept for per-card analyze buttons
 async function runClaudeAnalysis(clipId, btn) {
+  await runAnalysis(clipId, btn, 'auto');
+}
+
+const TIER_LABELS = {
+  cv:          'OpenCV',
+  clip:        'CLIP',
+  claude_text: 'Claude text',
+  claude_full: 'Claude full',
+};
+
+async function runAnalysis(clipId, btn, mode) {
   const origText = btn.textContent;
   btn.textContent = 'Analyzing…';
   btn.disabled = true;
-  const res = await fetch(`/api/clips/${clipId}/reanalyze`, { method: 'POST' });
+  document.getElementById('dp-confirm-bar').style.display = 'none';
+  const statusEl = document.getElementById('dp-tier-status');
+  statusEl.textContent = '';
+  statusEl.className = 'dp-tier-status';
+
+  const res = await fetch(`/api/clips/${clipId}/reanalyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode }),
+  });
+
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   while (true) {
@@ -822,10 +897,30 @@ async function runClaudeAnalysis(clipId, btn) {
     for (const line of lines) {
       if (!line.startsWith('data:')) continue;
       let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-      if (evt.type === 'complete') {
+
+      if (evt.type === 'cv_result') {
+        const pct = Math.round(evt.confidence * 100);
+        statusEl.textContent = `OpenCV: ${pct}% confidence → ${evt.category}`;
+      } else if (evt.type === 'clip_result') {
+        const pct = Math.round(evt.confidence * 100);
+        statusEl.textContent = `CLIP: ${pct}% confidence → ${evt.category}`;
+      } else if (evt.type === 'needs_confirmation') {
+        statusEl.textContent = 'Low confidence on both tiers.';
+        statusEl.className = 'dp-tier-status warn';
+        if (activeDetail == clipId) {
+          document.getElementById('dp-confirm-bar').style.display = '';
+          gsap.from('#dp-confirm-bar', { opacity: 0, y: -4, duration: 0.2, ease: 'power2.out' });
+        }
+      } else if (evt.type === 'complete') {
+        const tierLabel = TIER_LABELS[evt.tier] || evt.tier;
+        statusEl.textContent = `Done via ${tierLabel}`;
+        statusEl.className = 'dp-tier-status ok';
         await loadClips();
         const card = document.querySelector(`.frame[data-id="${clipId}"]`);
         if (card && activeDetail == clipId) openDetail(card, clipId);
+      } else if (evt.type === 'error') {
+        statusEl.textContent = `Error: ${evt.error}`;
+        statusEl.className = 'dp-tier-status warn';
       }
     }
   }

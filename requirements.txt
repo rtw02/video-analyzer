@@ -3,3 +3,5 @@ uvicorn[standard]>=0.29.0
 Pillow>=10.0.0
 opencv-python-headless>=4.9.0
 imageio-ffmpeg>=0.5.1
+# Optional Tier-2: pip install open-clip-torch
+# open-clip-torch>=2.24.0

@@ -11,6 +11,11 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent))
 from analyzer import cache, extractor, claude_client, research as research_module
+from analyzer.local_cv import analyze_frames_cv
+from analyzer.clip_analyzer import analyze_frames_clip
+
+CV_CONFIDENCE_THRESHOLD   = 0.55
+CLIP_CONFIDENCE_THRESHOLD = 0.50
 
 cache.init_db()
 
@@ -119,8 +124,13 @@ async def update_clip_category(clip_id: int, body: CategoryUpdate):
     return {"ok": True}
 
 
+class ReanalyzeBody(BaseModel):
+    mode: str = "auto"  # auto | cv | clip | claude_text | claude_full
+
+
 @app.post("/api/clips/{clip_id}/reanalyze")
-async def reanalyze_clip(clip_id: int):
+async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
+    mode = body.mode if body else "auto"
     conn = cache.get_connection()
     row = conn.execute("SELECT * FROM clips WHERE id = ?", (clip_id,)).fetchone()
     conn.close()
@@ -134,28 +144,90 @@ async def reanalyze_clip(clip_id: int):
         if not video_path.exists():
             yield f"data: {json.dumps({'type':'error','error':'File not found'})}\n\n"
             return
-        yield f"data: {json.dumps({'type':'analyzing','file':row['filename']})}\n\n"
+
+        yield f"data: {json.dumps({'type':'analyzing','file':row['filename'],'mode':mode})}\n\n"
         custom_cats = [c["name"] for c in cache.get_custom_categories()]
         frame_paths = await loop.run_in_executor(None, extractor.extract_frames, str(video_path))
-        analysis = await loop.run_in_executor(
-            None, lambda: claude_client.analyze_frames(frame_paths, custom_categories=custom_cats)
-        )
+
+        result = None
+        tier_used = None
+        cv_metrics = None
+        cv_result = None
+
+        # ── Tier 1: OpenCV ────────────────────────────────────────────────────
+        if mode in ("auto", "cv"):
+            cv_result = await loop.run_in_executor(None, lambda: analyze_frames_cv(frame_paths))
+            if cv_result:
+                cv_metrics = cv_result.get("_metrics")
+                confidence = cv_result.get("confidence", 0)
+                yield f"data: {json.dumps({'type':'cv_result','confidence':confidence,'category':cv_result.get('category')})}\n\n"
+                if mode == "cv" or confidence >= CV_CONFIDENCE_THRESHOLD:
+                    result = cv_result
+                    tier_used = "cv"
+
+        # ── Tier 2: CLIP ──────────────────────────────────────────────────────
+        if result is None and mode in ("auto", "clip"):
+            clip_result = await loop.run_in_executor(
+                None, lambda: analyze_frames_clip(frame_paths, extra_categories=custom_cats)
+            )
+            if clip_result:
+                confidence = clip_result.get("confidence", 0)
+                yield f"data: {json.dumps({'type':'clip_result','confidence':confidence,'category':clip_result.get('category')})}\n\n"
+                if mode == "clip" or confidence >= CLIP_CONFIDENCE_THRESHOLD:
+                    # Merge quality metrics from CV (CLIP can't assess sharpness/exposure)
+                    if cv_result:
+                        clip_result["quality_score"] = cv_result.get("quality_score")
+                        clip_result["is_usable"]     = cv_result.get("is_usable")
+                        clip_result["lighting"]      = clip_result.get("lighting") or cv_result.get("lighting")
+                    result = clip_result
+                    tier_used = "clip"
+
+        # ── Auto cascade dead-end: ask user before using Claude ───────────────
+        if result is None and mode == "auto":
+            extractor.cleanup_frames(frame_paths)
+            yield f"data: {json.dumps({'type':'needs_confirmation','metrics':cv_metrics or {}})}\n\n"
+            return
+
+        # ── Tier 3a: Claude text-only (~250 tokens) ───────────────────────────
+        if result is None and mode == "claude_text":
+            if not cv_metrics:
+                cv_r = await loop.run_in_executor(None, lambda: analyze_frames_cv(frame_paths))
+                cv_metrics = cv_r.get("_metrics") if cv_r else {}
+            analysis = await loop.run_in_executor(
+                None, lambda: claude_client.analyze_clip_text_only(cv_metrics or {}, custom_categories=custom_cats)
+            )
+            result = analysis
+            tier_used = "claude_text"
+
+        # ── Tier 3b: Claude full vision (~5000 tokens) ────────────────────────
+        if result is None and mode == "claude_full":
+            analysis = await loop.run_in_executor(
+                None, lambda: claude_client.analyze_frames(frame_paths, custom_categories=custom_cats)
+            )
+            result = analysis
+            tier_used = "claude_full"
+
+        extractor.cleanup_frames(frame_paths)
+
+        if not result:
+            yield f"data: {json.dumps({'type':'error','error':'Analysis failed'})}\n\n"
+            return
+
         updated = dict(row)
         updated.update({
-            "analyzed_at": datetime.now().isoformat(),
-            "quality_score": analysis.get("quality_score"),
-            "scene_type": analysis.get("scene_type"),
-            "mood": analysis.get("mood"),
-            "lighting": analysis.get("lighting"),
-            "activities": json.dumps(analysis.get("activities", [])),
-            "category": analysis.get("category"),
-            "is_usable": int(analysis.get("is_usable", True)),
-            "notes": analysis.get("notes"),
-            "raw_analysis": json.dumps(analysis),
+            "analyzed_at":  datetime.now().isoformat(),
+            "quality_score": result.get("quality_score"),
+            "scene_type":    result.get("scene_type"),
+            "mood":          result.get("mood"),
+            "lighting":      result.get("lighting"),
+            "activities":    json.dumps(result.get("activities", [])),
+            "category":      result.get("category"),
+            "is_usable":     int(result.get("is_usable", True)) if result.get("is_usable") is not None else 1,
+            "notes":         result.get("notes"),
+            "raw_analysis":  json.dumps(result),
         })
         cache.upsert_clip(updated)
-        extractor.cleanup_frames(frame_paths)
-        yield f"data: {json.dumps({'type':'complete','analysis':analysis})}\n\n"
+        yield f"data: {json.dumps({'type':'complete','analysis':result,'tier':tier_used})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

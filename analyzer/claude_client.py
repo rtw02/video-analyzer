@@ -176,6 +176,62 @@ def analyze_group_sequence(clips: list[dict], timeout: int = 90) -> dict:
         return {"error": f"bad JSON: {text[:200]}"}
 
 
+TEXT_ONLY_PROMPT = """Classify a video clip from computer vision metrics only (no images).
+
+Metrics:
+- Sharpness: {blur:.1f}  (>200=sharp, 80-200=ok, 25-80=soft, <25=blurry/unusable)
+- Brightness: {brightness:.1f}/255  (<40=dark, >220=overexposed, 100-180=ideal)
+- Warm color ratio: {warm_ratio:.3f}  (>0.22=orange/golden tones)
+- Green ratio: {green_ratio:.3f}  (>0.2=nature/trees)
+- Motion: {motion:.1f}  (>8=action/movement, <2=static)
+- Edge density: {edge_density:.4f}  (>0.06=complex urban, <0.02=open landscape)
+- Sky ratio: {sky_ratio:.3f}  (>0.15=outdoor sky)
+- Water ratio: {water_ratio:.3f}  (>0.12=ocean/lake)
+- Contrast: {contrast:.1f}
+
+Categories: {cats}
+
+Return ONLY valid JSON, no markdown:
+{{
+  "quality_score": 1-10,
+  "category": "one of the categories",
+  "scene_type": "landscape/urban/indoor/water/forest/other",
+  "mood": "cinematic/energetic/peaceful/dramatic/intimate",
+  "lighting": "golden_hour/bright_day/overcast/dark/indoor",
+  "is_usable": true or false,
+  "notes": "one sentence about social media potential"
+}}"""
+
+
+def analyze_clip_text_only(metrics: dict, custom_categories: list[str] | None = None,
+                           timeout: int = 60) -> dict:
+    """Send CV metrics as text to Claude — no images, ~250 tokens."""
+    cats = BASE_CATEGORIES[:]
+    if custom_categories:
+        cats = custom_categories + [c for c in cats if c not in custom_categories]
+
+    prompt = TEXT_ONLY_PROMPT.format(
+        cats=', '.join(cats),
+        blur=metrics.get('blur', 0),
+        brightness=metrics.get('brightness', 0),
+        warm_ratio=metrics.get('warm_ratio', 0),
+        green_ratio=metrics.get('green_ratio', 0),
+        motion=metrics.get('motion', 0),
+        edge_density=metrics.get('edge_density', 0),
+        sky_ratio=metrics.get('sky_ratio', 0),
+        water_ratio=metrics.get('water_ratio', 0),
+        contrast=metrics.get('contrast', 0),
+    )
+    msg = _build_stream_json_message([{"type": "text", "text": prompt}])
+    text = _run_claude(msg, timeout=timeout)
+    if not text:
+        return {"error": "no response from claude"}
+    try:
+        return _extract_json(text)
+    except json.JSONDecodeError:
+        return {"error": f"bad JSON: {text[:200]}"}
+
+
 def generate_proposals(clips: list[dict], count: int = 5, timeout: int = 120, trend_context: str = "") -> list[dict]:
     clip_summaries = []
     for c in clips:
