@@ -183,11 +183,17 @@ Metrics:
 - Brightness: {brightness:.1f}/255  (<40=dark, >220=overexposed, 100-180=ideal)
 - Warm color ratio: {warm_ratio:.3f}  (>0.22=orange/golden tones)
 - Green ratio: {green_ratio:.3f}  (>0.2=nature/trees)
-- Motion: {motion:.1f}  (>8=action/movement, <2=static)
-- Edge density: {edge_density:.4f}  (>0.06=complex urban, <0.02=open landscape)
-- Sky ratio: {sky_ratio:.3f}  (>0.15=outdoor sky)
+- Motion: {motion:.1f}  (>8=action/movement, 2-8=pan/handheld, <2=static)
+- Motion type: {motion_type}  (shake=handheld jitter, pan=smooth camera move, action=fast subject)
+- Edge density: {edge_density:.4f}  (>0.06=complex urban, 0.02-0.06=mixed, <0.02=open landscape)
+- Sky ratio: {sky_ratio:.3f}  (>0.15=outdoor sky visible)
 - Water ratio: {water_ratio:.3f}  (>0.12=ocean/lake)
 - Contrast: {contrast:.1f}
+
+Derived signals:
+- Warm×brightness: {warm_x_brightness:.4f}  (>0.04=likely golden hour; warm+bright together)
+- Green−warm: {green_minus_warm:.3f}  (positive=nature dominant, negative=warm/sunset dominant)
+- Sky−edges: {sky_minus_edges:.3f}  (positive=open landscape, negative=urban/complex)
 
 Categories: {cats}
 
@@ -205,22 +211,32 @@ Return ONLY valid JSON, no markdown:
 
 def analyze_clip_text_only(metrics: dict, custom_categories: list[str] | None = None,
                            timeout: int = 60) -> dict:
-    """Send CV metrics as text to Claude — no images, ~250 tokens."""
+    """Send CV metrics as text to Claude — no images, ~300 tokens."""
     cats = BASE_CATEGORIES[:]
     if custom_categories:
         cats = custom_categories + [c for c in cats if c not in custom_categories]
 
+    warm = metrics.get('warm_ratio', 0)
+    brightness = metrics.get('brightness', 0)
+    green = metrics.get('green_ratio', 0)
+    sky = metrics.get('sky_ratio', 0)
+    edges = metrics.get('edge_density', 0)
+
     prompt = TEXT_ONLY_PROMPT.format(
         cats=', '.join(cats),
         blur=metrics.get('blur', 0),
-        brightness=metrics.get('brightness', 0),
-        warm_ratio=metrics.get('warm_ratio', 0),
-        green_ratio=metrics.get('green_ratio', 0),
+        brightness=brightness,
+        warm_ratio=warm,
+        green_ratio=green,
         motion=metrics.get('motion', 0),
-        edge_density=metrics.get('edge_density', 0),
-        sky_ratio=metrics.get('sky_ratio', 0),
+        motion_type=metrics.get('motion_type', 'unknown'),
+        edge_density=edges,
+        sky_ratio=sky,
         water_ratio=metrics.get('water_ratio', 0),
         contrast=metrics.get('contrast', 0),
+        warm_x_brightness=warm * (brightness / 255.0),
+        green_minus_warm=green - warm,
+        sky_minus_edges=sky - edges,
     )
     msg = _build_stream_json_message([{"type": "text", "text": prompt}])
     text = _run_claude(msg, timeout=timeout)

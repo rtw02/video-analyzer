@@ -9,28 +9,59 @@ _MODEL = None
 _PREPROCESS = None
 _TOKENIZER = None
 
-# Per-category text prompts fed to CLIP
-_PROMPTS = {
-    'travel':        'travel photography of landscapes, mountains, roads, or scenic views',
-    'golden-hour':   'golden hour sunset or sunrise with warm orange and amber light',
-    'b-roll':        'generic b-roll filler footage or cutaway video clips',
-    'action':        'action sports footage with movement, speed, or physical activity',
-    'nature':        'nature photography of plants, trees, forests, or wildlife',
-    'portrait':      'a portrait photograph of a person or group of people',
-    'food':          'food photography, a meal, or cooking being prepared',
-    'architecture':  'architecture photography of buildings, structures, or city streets',
-    'other':         'miscellaneous footage that does not fit specific categories',
+# Multiple prompts per category — averaged embeddings improve accuracy.
+# b-roll and 'other' are excluded: they describe the *use* of footage, not
+# visual content, so CLIP has no reliable signal for them. OpenCV handles
+# the b-roll fallback; Claude handles 'other'.
+_PROMPTS_MULTI = {
+    'travel': [
+        'travel photography showing mountains, coastlines, or scenic roads',
+        'a tourist exploring a foreign landscape or city street',
+        'wide shot of a natural or urban travel destination',
+    ],
+    'golden-hour': [
+        'golden hour photography with warm orange sunset light',
+        'the sun setting over a landscape bathed in amber glow',
+        'magic hour backlit scene with long warm shadows at dusk or dawn',
+    ],
+    'action': [
+        'action sports footage showing fast movement or physical activity',
+        'someone running, surfing, skiing, or performing an athletic activity',
+        'high-energy camera movement following a moving subject',
+    ],
+    'nature': [
+        'nature photography of trees, forests, or wildlife in the wild',
+        'lush green plants and vegetation in natural outdoor light',
+        'a wildlife animal or bird in its natural habitat',
+    ],
+    'portrait': [
+        'a close-up portrait of a person looking at the camera',
+        'a person\'s face or upper body as the main subject of the shot',
+        'a group of people posing or interacting in a social scene',
+    ],
+    'food': [
+        'food photography of a plated meal or dish',
+        'a colorful plate of food or a drink being prepared or served',
+        'close-up of ingredients or a meal on a table or in a kitchen',
+    ],
+    'architecture': [
+        'architecture photography of a building facade or urban structure',
+        'city street photography showing buildings and infrastructure',
+        'geometric patterns in modern or historic architectural design',
+    ],
 }
+
+_CLIP_CATEGORIES = set(_PROMPTS_MULTI.keys())
 
 _MOOD_HINTS = {
     'golden-hour': 'cinematic', 'action': 'energetic', 'nature': 'peaceful',
-    'travel': 'cinematic', 'portrait': 'intimate', 'b-roll': 'cinematic',
-    'food': 'peaceful', 'architecture': 'dramatic', 'other': 'cinematic',
+    'travel': 'cinematic', 'portrait': 'intimate', 'food': 'peaceful',
+    'architecture': 'dramatic',
 }
 _SCENE_HINTS = {
     'golden-hour': 'landscape', 'action': 'outdoor', 'nature': 'forest',
-    'travel': 'landscape', 'portrait': 'indoor', 'b-roll': 'landscape',
-    'food': 'indoor', 'architecture': 'urban', 'other': 'landscape',
+    'travel': 'landscape', 'portrait': 'indoor', 'food': 'indoor',
+    'architecture': 'urban',
 }
 
 
@@ -65,7 +96,7 @@ def analyze_frames_clip(frame_paths: list[Path],
     """
     Zero-shot classify frames via CLIP.
     Returns same-shape dict as local_cv + 'confidence' (0-1) + '_scores'.
-    quality_score / is_usable / lighting stay None (CLIP can't determine these).
+    quality_score / is_usable / lighting stay None (CLIP can't assess these).
     Returns None if open_clip not installed or no frames loadable.
     """
     if not _load_model():
@@ -77,16 +108,25 @@ def analyze_frames_clip(frame_paths: list[Path],
     except ImportError:
         return None
 
-    # Build category list — custom first, then base fallbacks
     from .cache import BASE_CATEGORIES
-    all_cats = list(dict.fromkeys((extra_categories or []) + BASE_CATEGORIES))
-
-    prompts = [_PROMPTS.get(c, f'video footage of {c}') for c in all_cats]
+    # Only include visually concrete categories — skip b-roll and other
+    all_cats = [c for c in (extra_categories or []) + BASE_CATEGORIES
+                if c in _CLIP_CATEGORIES]
+    if not all_cats:
+        return None
 
     with torch.no_grad():
-        text_tokens = _TOKENIZER(prompts)
-        text_feats = _MODEL.encode_text(text_tokens)
-        text_feats = text_feats / text_feats.norm(dim=-1, keepdim=True)
+        # Average text embeddings across multiple prompts per category
+        cat_feats = {}
+        for cat in all_cats:
+            prompts = _PROMPTS_MULTI.get(cat, [f'video footage of {cat}'])
+            tokens = _TOKENIZER(prompts)
+            feats = _MODEL.encode_text(tokens)
+            feats = feats / feats.norm(dim=-1, keepdim=True)
+            cat_feats[cat] = feats.mean(0)
+
+        text_matrix = torch.stack([cat_feats[c] for c in all_cats])
+        text_matrix = text_matrix / text_matrix.norm(dim=-1, keepdim=True)
 
         img_feats = []
         for fp in frame_paths:
@@ -103,13 +143,18 @@ def analyze_frames_clip(frame_paths: list[Path],
 
         avg = torch.stack(img_feats).mean(0)
         avg = avg / avg.norm(dim=-1, keepdim=True)
-        probs = (avg @ text_feats.T).squeeze(0).softmax(dim=0).cpu().tolist()
+        probs = (avg @ text_matrix.T).squeeze(0).softmax(dim=0).cpu().tolist()
 
     scores = dict(zip(all_cats, probs))
     category = max(scores, key=scores.get)
     sorted_vals = sorted(scores.values(), reverse=True)
     gap = sorted_vals[0] - sorted_vals[1] if len(sorted_vals) > 1 else sorted_vals[0]
-    confidence = round(min(0.95, gap * 4.0), 3)  # gap 0.25 → 1.0, gap 0.125 → 0.5
+    confidence = round(min(0.95, gap * 4.0), 3)
+
+    # b-roll winning at low confidence = CLIP is confused, not actual b-roll
+    # (b-roll is excluded from all_cats above, so this is a safety net)
+    if category == 'b-roll' and confidence < 0.6:
+        confidence = min(confidence, 0.3)
 
     return {
         'quality_score': None,

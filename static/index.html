@@ -297,6 +297,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
       <input class="folder-input" id="folder-input" placeholder="Enter video folder path…" spellcheck="false">
     </div>
     <button class="tb-btn" id="scan-btn">Scan</button>
+    <button class="tb-btn" id="analyze-all-btn">Analyze All</button>
     <button class="tb-btn primary" id="propose-btn">Propose</button>
     <div class="tb-right">
       <div class="status-tag"><span class="pulse" id="pulse-dot"></span><span id="status-text">Ready</span></div>
@@ -1037,6 +1038,79 @@ document.getElementById('scan-btn').addEventListener('click', async () => {
         btn.disabled = false;
         btn.textContent = 'Scan';
         _scanning = false;
+      }
+    }
+  }
+});
+
+// ── Analyze All ───────────────────────────────────────────────────────────────
+let _analyzingAll = false;
+document.getElementById('analyze-all-btn').addEventListener('click', async () => {
+  if (_analyzingAll || _scanning) return;
+  const unreviewed = ALL_CLIPS.filter(c => !c.quality_score);
+  if (!unreviewed.length) {
+    document.getElementById('status-text').textContent = 'All clips already analyzed';
+    return;
+  }
+  _analyzingAll = true;
+  const btn = document.getElementById('analyze-all-btn');
+  const bar = document.getElementById('scan-bar');
+  const fill = document.getElementById('scan-fill');
+  const status = document.getElementById('status-text');
+  const pulse = document.getElementById('pulse-dot');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+  bar.classList.add('active');
+  gsap.set(fill, { width: '0%' });
+  pulse.style.background = 'var(--warn)';
+  pulse.style.boxShadow = '0 0 5px var(--warn)';
+
+  const res = await fetch('/api/clips/analyze-all', { method: 'POST' });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let total = unreviewed.length;
+  let needsReview = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = decoder.decode(value).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      let evt;
+      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
+
+      if (evt.type === 'start') {
+        total = evt.total || total;
+        status.textContent = `Analyzing ${evt.total} clip${evt.total !== 1 ? 's' : ''}…`;
+      } else if (evt.type === 'analyzed') {
+        const pct = (evt.done / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
+        status.textContent = `${evt.file} → ${evt.category} (${Math.round(evt.confidence * 100)}%)`;
+        await loadClips();
+      } else if (evt.type === 'low_confidence') {
+        needsReview++;
+        const pct = (evt.done / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
+        status.textContent = `${evt.file} → low confidence, needs review`;
+      } else if (evt.type === 'skipped' || evt.type === 'error') {
+        const pct = (evt.done / total) * 100;
+        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
+      } else if (evt.type === 'complete') {
+        gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
+          setTimeout(() => { bar.classList.remove('active'); gsap.set(fill, { width: '0%' }); }, 1200);
+        }});
+        pulse.style.background = 'var(--good)';
+        pulse.style.boxShadow = '0 0 5px var(--good)';
+        await loadClips();
+        const msg = needsReview
+          ? `${evt.done - needsReview} analyzed · ${needsReview} need review`
+          : `${evt.done} clips analyzed`;
+        status.textContent = msg;
+        btn.disabled = false;
+        btn.textContent = 'Analyze All';
+        _analyzingAll = false;
       }
     }
   }

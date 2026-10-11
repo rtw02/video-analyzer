@@ -1,6 +1,7 @@
 import sys
 import json
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from datetime import datetime
 
@@ -8,6 +9,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
+
+_ANALYSIS_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="cv_worker")
 
 sys.path.insert(0, str(Path(__file__).parent))
 from analyzer import cache, extractor, claude_client, research as research_module
@@ -147,7 +150,9 @@ async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
 
         yield f"data: {json.dumps({'type':'analyzing','file':row['filename'],'mode':mode})}\n\n"
         custom_cats = [c["name"] for c in cache.get_custom_categories()]
-        frame_paths = await loop.run_in_executor(None, extractor.extract_frames, str(video_path))
+        frame_paths = await loop.run_in_executor(
+            None, lambda: extractor.extract_frames(str(video_path), md5=row.get("md5_hash"))
+        )
 
         result = None
         tier_used = None
@@ -228,6 +233,93 @@ async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
         })
         cache.upsert_clip(updated)
         yield f"data: {json.dumps({'type':'complete','analysis':result,'tier':tier_used})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ── Batch analyze ─────────────────────────────────────────────────────────────
+
+@app.post("/api/clips/analyze-all")
+async def analyze_all_clips():
+    """
+    Run OpenCV (Tier 1) on every unanalyzed clip concurrently.
+    Clips that score >= CV_CONFIDENCE_THRESHOLD are saved immediately.
+    Low-confidence clips are flagged in the SSE stream so the UI can show them.
+    Uses a bounded ThreadPoolExecutor (3 workers) to avoid saturating the CPU.
+    """
+    unanalyzed = [c for c in cache.get_all_clips() if not c.get("analyzed_at")]
+    if not unanalyzed:
+        raise HTTPException(400, "No unanalyzed clips")
+
+    async def generate():
+        loop = asyncio.get_event_loop()
+        total = len(unanalyzed)
+        yield f"data: {json.dumps({'type':'start','total':total})}\n\n"
+
+        done = 0
+        low_conf = 0
+
+        async def _analyze_one(clip: dict):
+            nonlocal done, low_conf
+            video_path = Path(clip["filepath"])
+            if not video_path.exists():
+                done += 1
+                return {"type": "skipped", "file": clip["filename"], "done": done, "total": total}
+
+            frame_paths = await loop.run_in_executor(
+                _ANALYSIS_POOL,
+                lambda: extractor.extract_frames(str(video_path), md5=clip.get("md5_hash"))
+            )
+            cv_result = await loop.run_in_executor(
+                _ANALYSIS_POOL, lambda: analyze_frames_cv(frame_paths)
+            )
+            done += 1
+
+            if not cv_result:
+                return {"type": "error", "file": clip["filename"], "done": done, "total": total}
+
+            confidence = cv_result.get("confidence", 0)
+            if confidence >= CV_CONFIDENCE_THRESHOLD:
+                updated = dict(clip)
+                updated.update({
+                    "analyzed_at":   datetime.now().isoformat(),
+                    "quality_score": cv_result.get("quality_score"),
+                    "scene_type":    cv_result.get("scene_type"),
+                    "mood":          cv_result.get("mood"),
+                    "lighting":      cv_result.get("lighting"),
+                    "activities":    json.dumps(cv_result.get("activities", [])),
+                    "category":      cv_result.get("category"),
+                    "is_usable":     int(cv_result.get("is_usable", True)) if cv_result.get("is_usable") is not None else 1,
+                    "notes":         cv_result.get("notes"),
+                    "raw_analysis":  json.dumps(cv_result),
+                })
+                cache.upsert_clip(updated)
+                return {
+                    "type": "analyzed", "file": clip["filename"],
+                    "category": cv_result.get("category"),
+                    "confidence": round(confidence, 2),
+                    "done": done, "total": total,
+                }
+            else:
+                low_conf += 1
+                return {
+                    "type": "low_confidence", "file": clip["filename"],
+                    "category": cv_result.get("category"),
+                    "confidence": round(confidence, 2),
+                    "done": done, "total": total,
+                }
+
+        # Process in batches of 6 to keep memory reasonable
+        batch_size = 6
+        for i in range(0, total, batch_size):
+            batch = unanalyzed[i:i + batch_size]
+            tasks = [asyncio.create_task(_analyze_one(c)) for c in batch]
+            for task in asyncio.as_completed(tasks):
+                result = await task
+                yield f"data: {json.dumps(result)}\n\n"
+
+        yield f"data: {json.dumps({'type':'complete','done':done,'low_confidence':low_conf,'total':total})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
