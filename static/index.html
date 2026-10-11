@@ -66,6 +66,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .qs-fill{height:100%}
 .qs-n{font-size:10px;color:var(--text-3);width:16px;font-variant-numeric:tabular-nums}
 
+/* Drag-drop overlay */
+.drop-overlay{position:fixed;inset:0;background:rgba(12,13,16,.88);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none}
+.drop-overlay.active{display:flex}
+.drop-ring{width:160px;height:160px;border:2px dashed rgba(201,167,74,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.drop-icon{font-size:36px;opacity:.7}
+.drop-label{font-size:13px;color:var(--text-2);font-family:'Epilogue',sans-serif;font-weight:500}
+.drop-sub{font-size:11px;color:var(--text-3);font-family:'Epilogue',sans-serif}
+/* Hidden file input */
+#file-input{display:none}
 /* Topbar */
 .topbar{background:var(--bg-alt);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 20px;position:relative}
 .folder-pill{display:flex;align-items:center;gap:8px;flex:1;max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:12px;color:var(--text-2)}
@@ -229,6 +238,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .trends-input::placeholder{color:var(--text-3)}
 .trends-input:focus{border-color:rgba(201,167,74,.35)}
 
+/* Debug panel */
+.dp-debug{margin-top:8px;border-top:1px solid var(--border);padding-top:7px}
+.dp-debug-toggle{width:100%;background:none;border:none;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;text-align:left;cursor:pointer;padding:0;display:flex;justify-content:space-between;align-items:center}
+.dp-debug-toggle:hover{color:var(--text-2)}
+.dp-debug-body{display:none;margin-top:6px}
+.dp-debug-body.open{display:block}
+.dp-debug-tier{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;opacity:.8}
+.dp-debug-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.dp-debug-row{display:flex;justify-content:space-between;font-size:10px;padding:1px 0}
+.dp-debug-key{color:var(--text-3)}
+.dp-debug-val{color:var(--text-2);font-variant-numeric:tabular-nums;font-weight:500}
 /* Analyze mode row */
 .dp-analyze-row{display:flex;gap:4px;margin-bottom:4px}
 .dp-analyze-row .dp-action{flex:1}
@@ -297,8 +317,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
       <input class="folder-input" id="folder-input" placeholder="Enter video folder path…" spellcheck="false">
     </div>
     <button class="tb-btn" id="scan-btn">Scan</button>
+    <button class="tb-btn" id="import-btn" title="Browse or drag files to import">Import</button>
     <button class="tb-btn" id="analyze-all-btn">Analyze All</button>
     <button class="tb-btn primary" id="propose-btn">Propose</button>
+    <button class="tb-btn" id="export-btn" title="Export library as CSV">Export</button>
+    <button class="tb-btn" id="reset-btn" title="Clear all analysis results">Reset</button>
     <div class="tb-right">
       <div class="status-tag"><span class="pulse" id="pulse-dot"></span><span id="status-text">Ready</span></div>
       <button class="icon-btn" id="theme-btn" title="Toggle theme">◑</button>
@@ -379,6 +402,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
       <div class="dp-row"><span class="dp-lbl">Lighting</span><span class="dp-val" id="dp-light">—</span></div>
       <div class="dp-row"><span class="dp-lbl">Resolution</span><span class="dp-val" id="dp-res">—</span></div>
       <div class="dp-note" id="dp-note" style="display:none">—</div>
+      <div class="dp-debug" id="dp-debug" style="display:none">
+        <button class="dp-debug-toggle" id="dp-debug-toggle">
+          <span>Debug</span><span id="dp-debug-arrow">▸</span>
+        </button>
+        <div class="dp-debug-body" id="dp-debug-body">
+          <div class="dp-debug-tier" id="dp-debug-tier"></div>
+          <div class="dp-debug-grid" id="dp-debug-grid"></div>
+        </div>
+      </div>
     </div>
     <!-- Editable fields (always shown, pre-filled if analyzed) -->
     <div class="dp-section" id="dp-edit-section">
@@ -425,6 +457,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     </div>
   </div>
 </div>
+
+<!-- Drag-drop overlay -->
+<div class="drop-overlay" id="drop-overlay">
+  <div class="drop-ring">
+    <div class="drop-icon">⬇</div>
+    <div class="drop-label">Drop video files</div>
+    <div class="drop-sub">mp4 · mov · avi · mkv</div>
+  </div>
+</div>
+<!-- Hidden file input for Browse -->
+<input type="file" id="file-input" multiple accept=".mp4,.mov,.avi,.mkv,.MP4,.MOV,.AVI,.MKV,video/*">
 
 <!-- Caption modal -->
 <div class="modal-overlay" id="caption-modal">
@@ -761,6 +804,32 @@ function openDetail(card, clipId) {
   usableToggle.classList.toggle('on', clip.is_usable);
   document.getElementById('dp-usable-label').textContent = clip.is_usable ? 'Usable' : 'Not usable';
   document.getElementById('dp-notes-input').value = clip.notes || '';
+
+  // Debug panel
+  const debugEl = document.getElementById('dp-debug');
+  if (clip.analysis_tier) {
+    debugEl.style.display = '';
+    const tierLabels = { cv: 'Tier 1 · OpenCV', clip: 'Tier 2 · CLIP', claude: 'Tier 3 · Claude' };
+    const tierEl = document.getElementById('dp-debug-tier');
+    const conf = clip.confidence != null ? ` · ${Math.round(clip.confidence * 100)}% conf` : '';
+    tierEl.textContent = (tierLabels[clip.analysis_tier] || clip.analysis_tier) + conf;
+    const grid = document.getElementById('dp-debug-grid');
+    grid.innerHTML = '';
+    const scores = clip.debug_scores || {};
+    const fmt = v => typeof v === 'number' ? v.toFixed(3) : String(v);
+    const priority = ['blur', 'brightness', 'warm_ratio', 'green_ratio', 'sky_ratio',
+                      'water_ratio', 'edge_density', 'motion', 'motion_type', 'contrast'];
+    const keys = [...priority.filter(k => k in scores),
+                  ...Object.keys(scores).filter(k => !priority.includes(k))];
+    for (const k of keys) {
+      const row = document.createElement('div');
+      row.className = 'dp-debug-row';
+      row.innerHTML = `<span class="dp-debug-key">${k}</span><span class="dp-debug-val">${fmt(scores[k])}</span>`;
+      grid.appendChild(row);
+    }
+  } else {
+    debugEl.style.display = 'none';
+  }
 
   // Button states
   document.getElementById('dp-analyze-btn').dataset.id = clipId;
@@ -1113,6 +1182,152 @@ document.getElementById('analyze-all-btn').addEventListener('click', async () =>
         _analyzingAll = false;
       }
     }
+  }
+});
+
+// ── Import ────────────────────────────────────────────────────────────────────
+let _importing = false;
+
+async function _streamImport(fetchPromise) {
+  if (_importing || _scanning || _analyzingAll) return;
+  _importing = true;
+  const btn = document.getElementById('import-btn');
+  const bar = document.getElementById('scan-bar');
+  const fill = document.getElementById('scan-fill');
+  const status = document.getElementById('status-text');
+  const pulse = document.getElementById('pulse-dot');
+
+  btn.disabled = true;
+  btn.textContent = 'Importing…';
+  bar.classList.add('active');
+  gsap.set(fill, { width: '0%' });
+  pulse.style.background = 'var(--warn)';
+  pulse.style.boxShadow = '0 0 5px var(--warn)';
+
+  let total = 1;
+  try {
+    const res = await fetchPromise;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      status.textContent = 'Import failed: ' + (err.detail || res.status);
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value).split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
+        if (evt.type === 'start') {
+          total = evt.total || 1;
+          status.textContent = `Importing ${evt.total} file${evt.total !== 1 ? 's' : ''}…`;
+        } else if (evt.type === 'done' || evt.type === 'cached') {
+          const pct = (evt.index / total) * 100;
+          gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
+          status.textContent = evt.type === 'cached' ? `Already in library: ${evt.file}` : `Imported: ${evt.file}`;
+          await loadClips();
+        } else if (evt.type === 'error') {
+          const pct = (evt.index / total) * 100;
+          gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
+          status.textContent = `Error: ${evt.file}`;
+        } else if (evt.type === 'complete') {
+          gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
+            setTimeout(() => { bar.classList.remove('active'); gsap.set(fill, { width: '0%' }); }, 1200);
+          }});
+          pulse.style.background = 'var(--good)';
+          pulse.style.boxShadow = '0 0 5px var(--good)';
+          await loadClips();
+          const usable = ALL_CLIPS.filter(c => c.is_usable).length;
+          status.textContent = `${ALL_CLIPS.length} clips · ${usable} usable`;
+        }
+      }
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Import';
+    _importing = false;
+  }
+}
+
+// Import button → macOS native file picker (no upload, no copy)
+document.getElementById('import-btn').addEventListener('click', async () => {
+  const status = document.getElementById('status-text');
+  status.textContent = 'Opening file picker…';
+  let pickRes;
+  try {
+    pickRes = await fetch('/api/pick-files');
+  } catch(e) {
+    status.textContent = 'File picker unavailable';
+    return;
+  }
+  if (!pickRes.ok) { status.textContent = 'File picker failed'; return; }
+  const data = await pickRes.json();
+  if (data.cancelled || !data.paths || !data.paths.length) {
+    status.textContent = 'No files selected';
+    return;
+  }
+  await _streamImport(fetch('/api/import-paths', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paths: data.paths })
+  }));
+});
+
+// Drag-drop: show overlay while dragging over window
+let _dragCounter = 0;
+window.addEventListener('dragenter', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  _dragCounter++;
+  document.getElementById('drop-overlay').classList.add('active');
+  e.preventDefault();
+});
+window.addEventListener('dragleave', () => {
+  _dragCounter--;
+  if (_dragCounter <= 0) {
+    _dragCounter = 0;
+    document.getElementById('drop-overlay').classList.remove('active');
+  }
+});
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', async e => {
+  e.preventDefault();
+  _dragCounter = 0;
+  document.getElementById('drop-overlay').classList.remove('active');
+  const files = Array.from(e.dataTransfer.files).filter(f =>
+    ['.mp4','.mov','.avi','.mkv'].includes(f.name.slice(f.name.lastIndexOf('.')).toLowerCase())
+  );
+  if (!files.length) return;
+  const form = new FormData();
+  for (const f of files) form.append('files', f);
+  await _streamImport(fetch('/api/import-upload', { method: 'POST', body: form }));
+});
+
+// ── Debug panel toggle ────────────────────────────────────────────────────────
+document.getElementById('dp-debug-toggle').addEventListener('click', () => {
+  const body = document.getElementById('dp-debug-body');
+  const arrow = document.getElementById('dp-debug-arrow');
+  const open = body.classList.toggle('open');
+  arrow.textContent = open ? '▾' : '▸';
+});
+
+// ── Export ────────────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', () => {
+  window.location.href = '/api/export?format=csv';
+});
+
+// ── Reset all analysis ────────────────────────────────────────────────────────
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  const count = ALL_CLIPS.filter(c => c.quality_score).length;
+  if (!count) { document.getElementById('status-text').textContent = 'Nothing to reset'; return; }
+  if (!confirm(`Clear analysis results for all ${count} analyzed clip${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+  const res = await fetch('/api/clips/reset-analysis', { method: 'POST' });
+  if (res.ok) {
+    await loadClips();
+    document.getElementById('status-text').textContent = `Reset ${count} clips`;
   }
 });
 

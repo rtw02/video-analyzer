@@ -13,6 +13,9 @@ BASE_CATEGORIES = ["travel", "b-roll", "portrait", "action", "golden-hour",
 def init_db(db_path: Path = DB_PATH):
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
+    # WAL mode: readers don't block writers; persists in the DB file.
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     c = conn.cursor()
     c.executescript("""
         CREATE TABLE IF NOT EXISTS clips (
@@ -426,6 +429,17 @@ def delete_group(group_id: int, db_path: Path = DB_PATH):
     conn = get_connection(db_path)
     conn.execute("DELETE FROM clip_group_members WHERE group_id = ?", (group_id,))
     conn.execute("DELETE FROM clip_groups WHERE id = ?", (group_id,))
+    conn.commit()
+    conn.close()
+
+
+def reset_all_analysis(db_path: Path = DB_PATH):
+    """Clear all CV/CLIP/Claude results so clips can be re-analyzed from scratch."""
+    conn = get_connection(db_path)
+    conn.execute("""UPDATE clips SET
+        analyzed_at=NULL, quality_score=NULL, scene_type=NULL, mood=NULL,
+        lighting=NULL, activities='[]', category='other', is_usable=1,
+        notes=NULL, raw_analysis=NULL""")
     conn.commit()
     conn.close()
 

@@ -1,14 +1,21 @@
 import sys
+import csv
+import io
 import json
 import asyncio
+import subprocess
+import threading
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
+
+IMPORT_DIR = Path("data/imported")
 
 _ANALYSIS_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="cv_worker")
 
@@ -24,6 +31,11 @@ cache.init_db()
 
 app = FastAPI(title="Footage")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Warm CLIP model in background so first analysis isn't slow
+from analyzer.clip_analyzer import is_available as _clip_available, _load_model as _clip_load
+if _clip_available():
+    threading.Thread(target=_clip_load, daemon=True, name="clip_warmup").start()
 
 
 @app.get("/")
@@ -50,6 +62,29 @@ def _fmt_clip(c: dict) -> dict:
     except Exception:
         pass
     thumb_path = Path("data/thumbs") / f"{c.get('md5_hash','x')}.jpg"
+
+    # Extract debug info from stored analysis result
+    raw = {}
+    try:
+        raw = json.loads(c.get("raw_analysis") or "{}")
+    except Exception:
+        pass
+    confidence = raw.get("confidence")
+    if "_metrics" in raw:
+        analysis_tier = "cv"
+        debug_scores = {k: round(v, 3) for k, v in raw["_metrics"].items()
+                        if isinstance(v, (int, float)) and k != "motion_type"}
+        debug_scores["motion_type"] = raw["_metrics"].get("motion_type", "")
+    elif "_scores" in raw:
+        analysis_tier = "clip"
+        debug_scores = raw["_scores"]
+    elif c.get("analyzed_at"):
+        analysis_tier = "claude"
+        debug_scores = {}
+    else:
+        analysis_tier = None
+        debug_scores = {}
+
     return {
         "id": c["id"],
         "name": c["filename"],
@@ -68,6 +103,9 @@ def _fmt_clip(c: dict) -> dict:
         "notes": c.get("notes") or "",
         "activities": activities,
         "has_thumb": thumb_path.exists(),
+        "analysis_tier": analysis_tier,
+        "confidence": confidence,
+        "debug_scores": debug_scores,
     }
 
 
@@ -114,6 +152,31 @@ async def get_thumb(clip_id: int):
 @app.delete("/api/clips/{clip_id}")
 async def delete_clip(clip_id: int):
     cache.delete_clip(clip_id)
+    return {"ok": True}
+
+
+@app.get("/api/export")
+async def export_clips(format: str = "json"):
+    clips = cache.get_all_clips()
+    if format == "csv":
+        fields = ["id", "filename", "filepath", "duration_seconds", "resolution",
+                  "file_size_mb", "quality_score", "category", "scene_type", "mood",
+                  "lighting", "is_usable", "notes", "analyzed_at"]
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(clips)
+        return Response(
+            buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=footage.csv"},
+        )
+    return {"clips": clips}
+
+
+@app.post("/api/clips/reset-analysis")
+async def reset_all_analysis():
+    cache.reset_all_analysis()
     return {"ok": True}
 
 
@@ -233,6 +296,155 @@ async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
         })
         cache.upsert_clip(updated)
         yield f"data: {json.dumps({'type':'complete','analysis':result,'tier':tier_used})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ── Import ────────────────────────────────────────────────────────────────────
+
+@app.get("/api/pick-files")
+async def pick_files():
+    """
+    Opens the macOS native Finder file picker via osascript.
+    Returns selected paths directly — no file copy, no upload.
+    Returns {cancelled: true} when user dismisses the dialog.
+    """
+    script = (
+        'set theFiles to choose file '
+        'with prompt "Select video clips to import" '
+        'of type {"mp4", "mov", "avi", "mkv", "MP4", "MOV", "AVI", "MKV"} '
+        'with multiple selections allowed\n'
+        'set out to ""\n'
+        'repeat with f in theFiles\n'
+        '  set out to out & POSIX path of f & linefeed\n'
+        'end repeat\n'
+        'return out'
+    )
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, timeout=120
+        )
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.lower()
+        if "cancel" in stderr or "user canceled" in stderr:
+            return {"paths": [], "cancelled": True}
+        raise HTTPException(500, result.stderr.strip())
+    paths = [p.strip() for p in result.stdout.strip().splitlines() if p.strip()]
+    return {"paths": paths, "cancelled": False}
+
+
+class ImportPathsBody(BaseModel):
+    paths: list[str]
+
+
+async def _process_video_file(video_path: Path, thumb_dir: Path,
+                               loop: asyncio.AbstractEventLoop) -> dict:
+    """Shared logic for scanning a single video file into the DB."""
+    md5 = await loop.run_in_executor(None, cache.compute_md5, str(video_path))
+    existing = cache.get_clip_by_hash(md5)
+    if existing and existing.get("analyzed_at"):
+        return {"type": "cached", "file": video_path.name}
+
+    meta = await loop.run_in_executor(None, extractor.get_video_metadata, str(video_path))
+    await loop.run_in_executor(None, extractor.extract_thumbnail, str(video_path), thumb_dir, md5)
+    clip_data = {
+        "filepath": str(video_path),
+        "filename": video_path.name,
+        "md5_hash": md5,
+        "duration_seconds": meta.get("duration_seconds"),
+        "resolution": meta.get("resolution"),
+        "file_size_mb": meta.get("file_size_mb"),
+        "analyzed_at": None,
+        "quality_score": None,
+        "scene_type": None,
+        "mood": None,
+        "lighting": None,
+        "activities": "[]",
+        "category": "other",
+        "is_usable": 1,
+        "notes": None,
+        "raw_analysis": None,
+    }
+    cache.upsert_clip(clip_data)
+    return {"type": "done", "file": video_path.name}
+
+
+@app.post("/api/import-paths")
+async def import_paths(body: ImportPathsBody):
+    """Process a list of file paths returned by the native file picker."""
+    valid = [Path(p) for p in body.paths
+             if Path(p).suffix.lower() in {e.lower() for e in extractor.VIDEO_EXTENSIONS}]
+    if not valid:
+        raise HTTPException(400, "No supported video files in selection")
+
+    async def generate():
+        loop = asyncio.get_event_loop()
+        total = len(valid)
+        thumb_dir = Path("data/thumbs")
+        thumb_dir.mkdir(parents=True, exist_ok=True)
+        yield f"data: {json.dumps({'type':'start','total':total})}\n\n"
+        for i, vp in enumerate(valid):
+            if not vp.exists():
+                yield f"data: {json.dumps({'type':'error','file':vp.name,'error':'File not found','index':i+1,'total':total})}\n\n"
+                continue
+            try:
+                result = await _process_video_file(vp, thumb_dir, loop)
+                result.update({"index": i + 1, "total": total})
+                yield f"data: {json.dumps(result)}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'type':'error','file':vp.name,'error':str(e),'index':i+1,'total':total})}\n\n"
+            await asyncio.sleep(0)
+        yield f"data: {json.dumps({'type':'complete','total':total})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/import-upload")
+async def import_upload(files: list[UploadFile] = File(...)):
+    """
+    Accept drag-and-dropped file bytes, save to data/imported/, then process.
+    Browser File API doesn't expose real paths, so this is the fallback.
+    """
+    IMPORT_DIR.mkdir(parents=True, exist_ok=True)
+    supported = {e.lower() for e in extractor.VIDEO_EXTENSIONS}
+
+    async def generate():
+        loop = asyncio.get_event_loop()
+        thumb_dir = Path("data/thumbs")
+        thumb_dir.mkdir(parents=True, exist_ok=True)
+        total = len(files)
+        yield f"data: {json.dumps({'type':'start','total':total})}\n\n"
+        for i, upload in enumerate(files):
+            if Path(upload.filename).suffix.lower() not in supported:
+                yield f"data: {json.dumps({'type':'error','file':upload.filename,'error':'Unsupported format','index':i+1,'total':total})}\n\n"
+                continue
+            dest = IMPORT_DIR / upload.filename
+            # If name collides, disambiguate
+            stem, suf = dest.stem, dest.suffix
+            counter = 1
+            while dest.exists():
+                dest = IMPORT_DIR / f"{stem}_{counter}{suf}"
+                counter += 1
+            try:
+                # Stream to disk without loading whole file in memory
+                def _save():
+                    with open(dest, "wb") as out:
+                        shutil.copyfileobj(upload.file, out)
+                await loop.run_in_executor(None, _save)
+                result = await _process_video_file(dest, thumb_dir, loop)
+                result.update({"index": i + 1, "total": total})
+                yield f"data: {json.dumps(result)}\n\n"
+            except Exception as e:
+                dest.unlink(missing_ok=True)
+                yield f"data: {json.dumps({'type':'error','file':upload.filename,'error':str(e),'index':i+1,'total':total})}\n\n"
+            await asyncio.sleep(0)
+        yield f"data: {json.dumps({'type':'complete','total':total})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
