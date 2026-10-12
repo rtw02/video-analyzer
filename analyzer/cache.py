@@ -94,6 +94,7 @@ def init_db(db_path: Path = DB_PATH):
         );
     """)
     conn.commit()
+    _migrate(conn)
     conn.close()
 
 
@@ -431,6 +432,39 @@ def delete_group(group_id: int, db_path: Path = DB_PATH):
     conn.execute("DELETE FROM clip_groups WHERE id = ?", (group_id,))
     conn.commit()
     conn.close()
+
+
+def _migrate(conn: sqlite3.Connection):
+    """Add new columns when upgrading an existing DB."""
+    for col, defn in [("segments", "TEXT"), ("segments_at", "TEXT")]:
+        try:
+            conn.execute(f"ALTER TABLE clips ADD COLUMN {col} {defn}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # already exists
+
+
+def save_segments(clip_id: int, segments: list[dict], db_path: Path = DB_PATH):
+    from datetime import datetime
+    conn = get_connection(db_path)
+    conn.execute(
+        "UPDATE clips SET segments=?, segments_at=? WHERE id=?",
+        (json.dumps(segments), datetime.now().isoformat(), clip_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_segments(clip_id: int, db_path: Path = DB_PATH) -> list[dict] | None:
+    conn = get_connection(db_path)
+    row = conn.execute("SELECT segments FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row or not row["segments"]:
+        return None
+    try:
+        return json.loads(row["segments"])
+    except Exception:
+        return None
 
 
 def reset_all_analysis(db_path: Path = DB_PATH):

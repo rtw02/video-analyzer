@@ -238,6 +238,44 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .trends-input::placeholder{color:var(--text-3)}
 .trends-input:focus{border-color:rgba(201,167,74,.35)}
 
+/* Breakdown panel */
+.dp-breakdown{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.bk-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.bk-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:500}
+.bk-rescan{font-size:10px;color:var(--text-3);background:none;border:none;cursor:pointer;font-family:'Epilogue',sans-serif;padding:0}
+.bk-rescan:hover{color:var(--accent)}
+/* Timeline bar */
+.bk-bar{display:flex;height:20px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:6px}
+.bk-seg{flex:var(--w);background:var(--c);opacity:.5;cursor:pointer;transition:opacity .1s;border-radius:2px;position:relative;min-width:0}
+.bk-seg:hover,.bk-seg.active{opacity:1}
+.bk-seg.active::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--c)}
+.bk-tc-row{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-bottom:10px}
+/* Segment list */
+.bk-list{display:flex;flex-direction:column;gap:4px}
+.bk-item{border:1px solid var(--border);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color .1s}
+.bk-item:hover{border-color:var(--surface-3)}
+.bk-item.active{border-color:color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 15%,transparent)}
+.bk-row{display:flex;align-items:center;gap:8px;padding:7px 9px}
+.bk-dot{width:7px;height:7px;border-radius:50%;background:var(--c);flex-shrink:0}
+.bk-tc{font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px}
+.bk-type{font-size:11px;font-weight:500;color:var(--text-2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-badge{font-size:9px;padding:2px 6px;border-radius:10px;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 28%,transparent);white-space:nowrap;flex-shrink:0}
+.bk-chevron{font-size:9px;color:var(--text-3);flex-shrink:0;transition:transform .12s}
+.bk-item.active .bk-chevron{transform:rotate(90deg)}
+.bk-detail{display:none;padding:0 9px 9px 24px;border-top:1px solid var(--border);padding-top:8px}
+.bk-item.active .bk-detail{display:block}
+.bk-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px}
+.bk-drow{display:flex;flex-direction:column;gap:1px}
+.bk-dlbl{font-size:9px;color:var(--text-3);letter-spacing:.04em;text-transform:uppercase}
+.bk-dval{font-size:10px;color:var(--text-2);font-weight:500;line-height:1.3}
+.bk-motion-wrap{display:flex;align-items:center;gap:5px}
+.bk-motion-track{flex:1;height:2px;background:var(--surface-3);border-radius:1px;overflow:hidden}
+.bk-motion-fill{height:100%;background:var(--c);border-radius:1px}
+.bk-notes{font-size:10px;color:var(--text-2);line-height:1.55;padding:7px 9px;background:var(--surface-2);border-radius:3px;border-left:2px solid var(--c)}
+/* Scanning state */
+.bk-scanning{font-size:11px;color:var(--text-3);text-align:center;padding:12px 0;display:flex;align-items:center;justify-content:center;gap:6px}
+.bk-spinner{width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* Debug panel */
 .dp-debug{margin-top:8px;border-top:1px solid var(--border);padding-top:7px}
 .dp-debug-toggle{width:100%;background:none;border:none;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;text-align:left;cursor:pointer;padding:0;display:flex;justify-content:space-between;align-items:center}
@@ -454,6 +492,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
         </select>
       </div>
       <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
+    </div>
+    <!-- Breakdown panel -->
+    <div class="dp-breakdown" id="dp-breakdown" style="display:none">
+      <div class="bk-head">
+        <span class="bk-title">Breakdown</span>
+        <button class="bk-rescan" id="bk-rescan">Re-scan</button>
+      </div>
+      <div id="bk-body"></div>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+      <button class="dp-action" id="dp-breakdown-btn">Breakdown</button>
     </div>
   </div>
 </div>
@@ -839,6 +888,8 @@ function openDetail(card, clipId) {
   document.getElementById('dp-confirm-bar').style.display = 'none';
   document.getElementById('dp-save-btn').dataset.id = clipId;
   document.getElementById('dp-delete-btn').dataset.id = clipId;
+  document.getElementById('dp-breakdown').style.display = 'none';
+  document.getElementById('bk-body').innerHTML = '';
 
   const dp = document.getElementById('dp');
   if (!_detailOpen) {
@@ -974,6 +1025,8 @@ async function runAnalysis(clipId, btn, mode) {
       } else if (evt.type === 'clip_result') {
         const pct = Math.round(evt.confidence * 100);
         statusEl.textContent = `CLIP: ${pct}% confidence → ${evt.category}`;
+      } else if (evt.type === 'segmenting') {
+        statusEl.textContent = 'Detecting segments…';
       } else if (evt.type === 'needs_confirmation') {
         statusEl.textContent = 'Low confidence on both tiers.';
         statusEl.className = 'dp-tier-status warn';
@@ -988,6 +1041,10 @@ async function runAnalysis(clipId, btn, mode) {
         await loadClips();
         const card = document.querySelector(`.frame[data-id="${clipId}"]`);
         if (card && activeDetail == clipId) openDetail(card, clipId);
+        if (evt.segments && evt.segments.length && activeDetail == clipId) {
+          document.getElementById('dp-breakdown').style.display = '';
+          renderBreakdown(evt.segments);
+        }
       } else if (evt.type === 'error') {
         statusEl.textContent = `Error: ${evt.error}`;
         statusEl.className = 'dp-tier-status warn';
@@ -1006,6 +1063,125 @@ document.getElementById('dp-delete-btn').addEventListener('click', async () => {
   await fetch(`/api/clips/${id}`, { method: 'DELETE' });
   closeDetail();
   await loadClips();
+});
+
+// ── Breakdown ──────────────────────────────────────────────────────────────────
+const COLOR_MAP = {
+  estab: '#58A6FF', hero: '#C9A74A', pan: '#00D4CE',
+  broll: '#7A7D8A', action: '#D98C3E', close: '#C264B8'
+};
+
+function _fmtTc(s) {
+  const m = Math.floor(s / 60), sec = Math.round(s % 60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function renderBreakdown(segments) {
+  const total = segments[segments.length - 1]?.end || 1;
+  let activeIdx = -1;
+
+  const barItems = segments.map((seg, i) => {
+    const c = COLOR_MAP[seg.color_key] || '#7A7D8A';
+    const w = ((seg.end - seg.start) / total * 100).toFixed(2);
+    return `<div class="bk-seg" style="--w:${w};--c:${c};flex:${w}" data-idx="${i}" title="${seg.type} ${_fmtTc(seg.start)}–${_fmtTc(seg.end)}"></div>`;
+  }).join('');
+
+  const listItems = segments.map((seg, i) => {
+    const c = COLOR_MAP[seg.color_key] || '#7A7D8A';
+    const motPct = Math.round(seg.motion * 100);
+    return `<div class="bk-item" data-idx="${i}" style="--c:${c}">
+      <div class="bk-row">
+        <div class="bk-dot"></div>
+        <span class="bk-tc">${_fmtTc(seg.start)}–${_fmtTc(seg.end)}</span>
+        <span class="bk-type">${seg.type}</span>
+        <span class="bk-badge">${seg.use}</span>
+        <span class="bk-chevron">›</span>
+      </div>
+      <div class="bk-detail">
+        <div class="bk-detail-grid">
+          <div class="bk-drow"><span class="bk-dlbl">Motion</span>
+            <div class="bk-motion-wrap">
+              <div class="bk-motion-track"><div class="bk-motion-fill" style="width:${motPct}%"></div></div>
+              <span class="bk-dval">${seg.motion_label}</span>
+            </div>
+          </div>
+          <div class="bk-drow"><span class="bk-dlbl">Sharpness</span><span class="bk-dval">${seg.sharpness}</span></div>
+          <div class="bk-drow"><span class="bk-dlbl">Lighting</span><span class="bk-dval">${seg.lighting}</span></div>
+          <div class="bk-drow"><span class="bk-dlbl">Framing</span><span class="bk-dval">${seg.composition}</span></div>
+        </div>
+        <div class="bk-notes">${seg.notes}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const html = `
+    <div class="bk-bar" id="bk-bar">${barItems}</div>
+    <div class="bk-tc-row"><span>${_fmtTc(0)}</span><span>${_fmtTc(total)}</span></div>
+    <div class="bk-list" id="bk-list">${listItems}</div>`;
+
+  document.getElementById('bk-body').innerHTML = html;
+
+  const bar = document.getElementById('bk-bar');
+  const list = document.getElementById('bk-list');
+
+  function activate(idx) {
+    activeIdx = idx;
+    bar.querySelectorAll('.bk-seg').forEach((el, i) => el.classList.toggle('active', i === idx));
+    list.querySelectorAll('.bk-item').forEach((el, i) => el.classList.toggle('active', i === idx));
+  }
+
+  bar.querySelectorAll('.bk-seg').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.idx;
+      activate(activeIdx === idx ? -1 : idx);
+    });
+  });
+  list.querySelectorAll('.bk-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.idx;
+      activate(activeIdx === idx ? -1 : idx);
+    });
+  });
+}
+
+async function runBreakdown(clipId) {
+  const panel = document.getElementById('dp-breakdown');
+  const body  = document.getElementById('bk-body');
+  panel.style.display = '';
+  body.innerHTML = '<div class="bk-scanning"><div class="bk-spinner"></div>Scanning segments…</div>';
+
+  const es = new EventSource(`/api/clips/${clipId}/segments`);
+  es.addEventListener('message', e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'analyzing') {
+      body.innerHTML = `<div class="bk-scanning"><div class="bk-spinner"></div>Scanning segments…</div>`;
+    } else if (d.type === 'complete') {
+      es.close();
+      if (d.segments && d.segments.length) {
+        renderBreakdown(d.segments);
+      } else {
+        body.innerHTML = '<div class="bk-scanning">No segments detected.</div>';
+      }
+    } else if (d.type === 'error') {
+      es.close();
+      body.innerHTML = `<div class="bk-scanning" style="color:var(--bad)">${d.error || 'Analysis failed'}</div>`;
+    }
+  });
+  es.onerror = () => {
+    es.close();
+    body.innerHTML = '<div class="bk-scanning" style="color:var(--bad)">Connection lost.</div>';
+  };
+}
+
+document.getElementById('dp-breakdown-btn').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  runBreakdown(id);
+});
+document.getElementById('bk-rescan').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  runBreakdown(id);
 });
 
 // ── Navigation ─────────────────────────────────────────────────────────────────

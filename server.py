@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from analyzer import cache, extractor, claude_client, research as research_module
 from analyzer.local_cv import analyze_frames_cv
 from analyzer.clip_analyzer import analyze_frames_clip
+from analyzer.segmenter import analyze_clip_segments
 
 CV_CONFIDENCE_THRESHOLD   = 0.55
 CLIP_CONFIDENCE_THRESHOLD = 0.50
@@ -106,6 +107,7 @@ def _fmt_clip(c: dict) -> dict:
         "analysis_tier": analysis_tier,
         "confidence": confidence,
         "debug_scores": debug_scores,
+        "has_segments": bool(c.get("segments_at")),
     }
 
 
@@ -153,6 +155,39 @@ async def get_thumb(clip_id: int):
 async def delete_clip(clip_id: int):
     cache.delete_clip(clip_id)
     return {"ok": True}
+
+
+@app.get("/api/clips/{clip_id}/segments")
+async def get_clip_segments(clip_id: int):
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    row = dict(row)
+
+    async def generate():
+        loop = asyncio.get_event_loop()
+        video_path = Path(row["filepath"])
+        if not video_path.exists():
+            yield f"data: {json.dumps({'type':'error','error':'File not found'})}\n\n"
+            return
+
+        yield f"data: {json.dumps({'type':'analyzing','file':row['filename']})}\n\n"
+
+        segments = await loop.run_in_executor(
+            _ANALYSIS_POOL, lambda: analyze_clip_segments(str(video_path))
+        )
+
+        if not segments:
+            yield f"data: {json.dumps({'type':'error','error':'Could not detect segments'})}\n\n"
+            return
+
+        cache.save_segments(clip_id, segments)
+        yield f"data: {json.dumps({'type':'complete','segments':segments,'duration':row.get('duration_seconds',0)})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.get("/api/export")
@@ -295,7 +330,15 @@ async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
             "raw_analysis":  json.dumps(result),
         })
         cache.upsert_clip(updated)
-        yield f"data: {json.dumps({'type':'complete','analysis':result,'tier':tier_used})}\n\n"
+
+        yield f"data: {json.dumps({'type':'segmenting'})}\n\n"
+        segments = await loop.run_in_executor(
+            None, lambda: analyze_clip_segments(str(video_path))
+        )
+        if segments:
+            cache.save_segments(clip_id, segments)
+
+        yield f"data: {json.dumps({'type':'complete','analysis':result,'tier':tier_used,'segments':segments or []})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
