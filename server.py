@@ -108,6 +108,7 @@ def _fmt_clip(c: dict) -> dict:
         "confidence": confidence,
         "debug_scores": debug_scores,
         "has_segments": bool(c.get("segments_at")),
+        "segment_types": list({s["type"] for s in (json.loads(c["segments"]) if c.get("segments") else [])}),
     }
 
 
@@ -115,6 +116,20 @@ def _fmt_clip(c: dict) -> dict:
 async def get_clips():
     clips = cache.get_all_clips()
     return {"clips": [_fmt_clip(c) for c in clips]}
+
+
+@app.get("/api/clips/{clip_id}/info")
+async def get_clip_info(clip_id: int):
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    c = dict(row)
+    result = _fmt_clip(c)
+    segs = cache.get_segments(clip_id)
+    result["segments"] = segs or []
+    return result
 
 
 class ManualUpdate(BaseModel):
@@ -155,6 +170,22 @@ async def get_thumb(clip_id: int):
 async def delete_clip(clip_id: int):
     cache.delete_clip(clip_id)
     return {"ok": True}
+
+
+@app.get("/api/clips/{clip_id}/video")
+async def stream_video(clip_id: int):
+    conn = cache.get_connection()
+    row = conn.execute("SELECT filepath FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    path = Path(dict(row)["filepath"])
+    if not path.exists():
+        raise HTTPException(404)
+    suffix = path.suffix.lower()
+    mime = {"mp4": "video/mp4", "mov": "video/quicktime", "avi": "video/x-msvideo",
+            "mkv": "video/x-matroska", "webm": "video/webm"}.get(suffix.lstrip("."), "video/mp4")
+    return FileResponse(str(path), media_type=mime)
 
 
 @app.get("/api/clips/{clip_id}/segments")
@@ -207,6 +238,37 @@ async def export_clips(format: str = "json"):
             headers={"Content-Disposition": "attachment; filename=footage.csv"},
         )
     return {"clips": clips}
+
+
+@app.get("/api/export/shotlist")
+async def export_shotlist():
+    clips = cache.get_all_clips()
+    buf = io.StringIO()
+    fields = ["clip_name", "filepath", "start", "end", "duration_s", "type", "edit_use",
+              "motion", "lighting", "sharpness", "notes"]
+    writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for clip in clips:
+        segs = cache.get_segments(clip["id"]) or []
+        for seg in segs:
+            writer.writerow({
+                "clip_name":  clip["filename"],
+                "filepath":   clip["filepath"],
+                "start":      seg.get("start"),
+                "end":        seg.get("end"),
+                "duration_s": round((seg.get("end", 0) - seg.get("start", 0)), 1),
+                "type":       seg.get("type"),
+                "edit_use":   seg.get("use"),
+                "motion":     seg.get("motion_label"),
+                "lighting":   seg.get("lighting"),
+                "sharpness":  seg.get("sharpness"),
+                "notes":      seg.get("notes", "").replace("\n", " "),
+            })
+    return Response(
+        buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=shotlist.csv"},
+    )
 
 
 @app.post("/api/clips/reset-analysis")
@@ -285,11 +347,17 @@ async def reanalyze_clip(clip_id: int, body: ReanalyzeBody | None = None):
                     result = clip_result
                     tier_used = "clip"
 
-        # ── Auto cascade dead-end: ask user before using Claude ───────────────
+        # ── Auto cascade: fall through to Claude text (no confirmation needed) ──
         if result is None and mode == "auto":
-            extractor.cleanup_frames(frame_paths)
-            yield f"data: {json.dumps({'type':'needs_confirmation','metrics':cv_metrics or {}})}\n\n"
-            return
+            if not cv_metrics:
+                cv_r = await loop.run_in_executor(None, lambda: analyze_frames_cv(frame_paths))
+                cv_metrics = cv_r.get("_metrics") if cv_r else {}
+            yield f"data: {json.dumps({'type':'claude_text_fallback'})}\n\n"
+            analysis = await loop.run_in_executor(
+                None, lambda: claude_client.analyze_clip_text_only(cv_metrics or {}, custom_categories=custom_cats)
+            )
+            result = analysis
+            tier_used = "claude_text"
 
         # ── Tier 3a: Claude text-only (~250 tokens) ───────────────────────────
         if result is None and mode == "claude_text":
@@ -550,6 +618,11 @@ async def analyze_all_clips():
                     "raw_analysis":  json.dumps(cv_result),
                 })
                 cache.upsert_clip(updated)
+                segments = await loop.run_in_executor(
+                    _ANALYSIS_POOL, lambda: analyze_clip_segments(str(video_path))
+                )
+                if segments:
+                    cache.save_segments(clip["id"], segments)
                 return {
                     "type": "analyzed", "file": clip["filename"],
                     "category": cv_result.get("category"),

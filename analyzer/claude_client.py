@@ -46,6 +46,9 @@ PROPOSAL_PROMPT = """You are a social media video editor specializing in travel 
 Given these video clips from my personal library, propose {count} specific video ideas.
 Focus on what would perform best on social media: strong hooks, visual storytelling, platform-specific formats.
 
+Each clip includes temporal segment data: start/end timecodes, segment type, and recommended edit use.
+Use this to give SPECIFIC edit instructions — name exact timecodes and segment types, not just clip IDs.
+
 Clips:
 {clips_json}
 
@@ -55,6 +58,10 @@ Return ONLY a valid JSON array (no other text, no markdown), each item:
   "platform": "one of: tiktok, reels, youtube-shorts, youtube",
   "estimated_duration": "e.g. 30s or 2min",
   "clip_ids": [list of clip id integers to use in suggested order],
+  "edit_sequence": [
+    {{"clip_id": 1, "start": 9.0, "end": 18.0, "type": "Hero Moment", "role": "opening hook"}},
+    ...
+  ],
   "hook_text": "compelling opening hook for caption or voiceover",
   "caption": "full social media caption draft",
   "hashtags": ["relevant", "hashtags"],
@@ -251,6 +258,16 @@ def analyze_clip_text_only(metrics: dict, custom_categories: list[str] | None = 
 def generate_proposals(clips: list[dict], count: int = 5, timeout: int = 120, trend_context: str = "") -> list[dict]:
     clip_summaries = []
     for c in clips:
+        segs = []
+        try:
+            raw = c.get("segments")
+            if raw:
+                parsed = json.loads(raw) if isinstance(raw, str) else raw
+                segs = [{"start": s["start"], "end": s["end"], "type": s["type"],
+                         "use": s["use"], "lighting": s.get("lighting", "")}
+                        for s in parsed]
+        except Exception:
+            pass
         clip_summaries.append({
             "id": c["id"],
             "filename": c["filename"],
@@ -261,6 +278,7 @@ def generate_proposals(clips: list[dict], count: int = 5, timeout: int = 120, tr
             "category": c.get("category"),
             "quality_score": c.get("quality_score"),
             "notes": c.get("notes"),
+            "segments": segs,
         })
 
     trend_section = f"\n\n{trend_context}" if trend_context else ""

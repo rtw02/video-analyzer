@@ -245,8 +245,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .bk-rescan{font-size:10px;color:var(--text-3);background:none;border:none;cursor:pointer;font-family:'Epilogue',sans-serif;padding:0}
 .bk-rescan:hover{color:var(--accent)}
 /* Timeline bar */
-.bk-bar{display:flex;height:20px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:6px}
-.bk-seg{flex:var(--w);background:var(--c);opacity:.5;cursor:pointer;transition:opacity .1s;border-radius:2px;position:relative;min-width:0}
+.bk-bar-wrap{position:relative;margin-bottom:6px;cursor:col-resize}
+.bk-bar{display:flex;height:20px;border-radius:3px;overflow:hidden;gap:2px}
+.bk-cursor{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px;opacity:.85;pointer-events:none;transform:translateX(-50%);transition:left .08s linear;display:none}
+.bk-bar-wrap:hover .bk-cursor{opacity:1}
+.bk-seg{flex:var(--w);background:var(--c);opacity:.5;transition:opacity .1s;border-radius:2px;position:relative;min-width:0}
 .bk-seg:hover,.bk-seg.active{opacity:1}
 .bk-seg.active::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--c)}
 .bk-tc-row{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-bottom:10px}
@@ -272,10 +275,65 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .bk-motion-track{flex:1;height:2px;background:var(--surface-3);border-radius:1px;overflow:hidden}
 .bk-motion-fill{height:100%;background:var(--c);border-radius:1px}
 .bk-notes{font-size:10px;color:var(--text-2);line-height:1.55;padding:7px 9px;background:var(--surface-2);border-radius:3px;border-left:2px solid var(--c)}
+.bk-copy{font-size:9px;color:var(--text-3);background:none;border:1px solid var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:'Epilogue',sans-serif;margin-top:6px;display:block;transition:color .1s,border-color .1s}
+.bk-copy:hover{color:var(--accent);border-color:rgba(201,167,74,.4)}
 /* Scanning state */
 .bk-scanning{font-size:11px;color:var(--text-3);text-align:center;padding:12px 0;display:flex;align-items:center;justify-content:center;gap:6px}
 .bk-spinner{width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ── Preview modal ── */
+.pv-overlay{position:fixed;inset:0;background:rgba(6,7,10,.93);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px 16px;opacity:0;pointer-events:none;transition:opacity .18s}
+.pv-overlay.open{opacity:1;pointer-events:auto}
+.pv-modal{width:100%;max-width:920px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 40px);transform:translateY(6px);transition:transform .18s}
+.pv-overlay.open .pv-modal{transform:translateY(0)}
+.pv-header{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pv-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-meta{font-size:10px;color:var(--text-3);display:flex;gap:12px;flex-shrink:0}
+.pv-close{width:28px;height:28px;border-radius:4px;background:none;border:1px solid var(--border);color:var(--text-3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .1s,border-color .1s;font-family:'Epilogue',sans-serif}
+.pv-close:hover{color:var(--text);border-color:var(--surface-3)}
+.pv-body{display:grid;grid-template-columns:1fr 252px;flex:1;overflow:hidden;min-height:0}
+.pv-video-pane{display:flex;flex-direction:column;background:#000;border-right:1px solid var(--border);overflow:hidden}
+.pv-video-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#000;position:relative}
+.pv-video-wrap video{max-width:100%;max-height:100%;display:block}
+.pv-seg-overlay{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:linear-gradient(transparent,rgba(0,0,0,.65));font-size:10px;display:flex;gap:7px;align-items:center;pointer-events:none;opacity:0;transition:opacity .2s}
+.pv-seg-overlay.show{opacity:1}
+.pvo-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pvo-type{font-weight:500;color:rgba(255,255,255,.9)}
+.pvo-use{color:rgba(255,255,255,.5)}
+.pv-scrubber{padding:9px 12px 11px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.pv-tl-wrap{position:relative;margin-bottom:5px;cursor:col-resize}
+.pv-tl-bar{display:flex;height:16px;gap:2px;border-radius:3px;overflow:visible;position:relative}
+.pv-tl-seg{flex:var(--w);background:var(--c);opacity:.4;min-width:0;border-radius:2px;transition:opacity .1s}
+.pv-tl-seg.active{opacity:1}
+.pv-playhead{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px;transform:translateX(-50%);pointer-events:none;box-shadow:0 0 5px rgba(255,255,255,.35)}
+.pv-tl-tc{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-bottom:7px}
+.pv-transport{display:flex;align-items:center;gap:7px}
+.pvt-btn{width:28px;height:28px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s;flex-shrink:0;font-family:'Epilogue',sans-serif}
+.pvt-btn:hover{background:var(--surface-3);color:var(--text)}
+.pvt-play{background:var(--accent);border-color:transparent;color:#000;width:34px;height:34px;font-size:13px}
+.pvt-play:hover{opacity:.85}
+.pvt-time{font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:1;text-align:center}
+.pvt-speed{font-size:10px;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:3px;padding:3px 7px;cursor:pointer;font-family:'Epilogue',sans-serif;transition:color .1s}
+.pvt-speed:hover{color:var(--text)}
+.pv-seg-panel{display:flex;flex-direction:column;overflow:hidden}
+.pvsp-head{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.pvsp-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.pvsp-count{font-size:10px;color:var(--text-3)}
+.pvsp-list{flex:1;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:3px}
+.pvsp-list::-webkit-scrollbar{width:3px}
+.pvsp-list::-webkit-scrollbar-track{background:transparent}
+.pvsp-list::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
+.pvsp-item{border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color .1s,background .1s}
+.pvsp-item:hover{border-color:var(--surface-3)}
+.pvsp-item.active{border-color:color-mix(in srgb,var(--c) 50%,transparent);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.pvsp-row{display:flex;align-items:center;gap:6px;padding:6px 8px}
+.pvsp-now{width:4px;height:4px;border-radius:50%;background:var(--c);flex-shrink:0;opacity:0;transition:opacity .15s;box-shadow:0 0 4px var(--c)}
+.pvsp-item.active .pvsp-now{opacity:1}
+.pvsp-dot{width:6px;height:6px;border-radius:50%;background:var(--c);flex-shrink:0}
+.pvsp-tc{font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;min-width:52px}
+.pvsp-type{font-size:11px;font-weight:500;color:var(--text-2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pvsp-badge{font-size:9px;padding:1px 5px;border-radius:8px;background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);white-space:nowrap;flex-shrink:0}
+.pv-no-segs{padding:16px;font-size:11px;color:var(--text-3);text-align:center}
 /* Debug panel */
 .dp-debug{margin-top:8px;border-top:1px solid var(--border);padding-top:7px}
 .dp-debug-toggle{width:100%;background:none;border:none;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;text-align:left;cursor:pointer;padding:0;display:flex;justify-content:space-between;align-items:center}
@@ -298,13 +356,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .dp-tier-status.ok{color:var(--good)}
 .dp-tier-status.warn{color:var(--warn)}
 /* Confirm bar */
-.dp-confirm-bar{background:var(--surface);border:1px solid rgba(201,167,74,.25);border-radius:4px;padding:9px 10px;margin-bottom:6px;display:none}
-.dp-confirm-text{font-size:11px;color:var(--text-2);margin-bottom:7px;line-height:1.45}
-.dp-confirm-btns{display:flex;gap:5px}
-.dp-confirm-yes{flex:1;padding:5px 0;background:var(--accent-lo);border:1px solid rgba(201,167,74,.3);border-radius:3px;color:var(--accent);font-family:'Epilogue',sans-serif;font-size:10px;font-weight:500;cursor:pointer}
-.dp-confirm-yes:hover{background:rgba(201,167,74,.2)}
-.dp-confirm-no{flex:1;padding:5px 0;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;cursor:pointer}
-.dp-confirm-no:hover{background:var(--surface-2);color:var(--text-2)}
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -329,6 +380,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     </nav>
     <div class="rail-sep"></div>
     <div class="rail-sect" id="cat-filter-list"></div>
+    <div class="rail-sep" id="seg-filter-sep" style="display:none"></div>
+    <div class="rail-sect" id="seg-filter-list"></div>
     <div class="quality-summary" id="quality-summary" style="display:none">
       <div class="qs-head">Quality distribution</div>
       <div class="qs-row">
@@ -359,6 +412,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     <button class="tb-btn" id="analyze-all-btn">Analyze All</button>
     <button class="tb-btn primary" id="propose-btn">Propose</button>
     <button class="tb-btn" id="export-btn" title="Export library as CSV">Export</button>
+    <button class="tb-btn" id="shotlist-btn" title="Export shot list with timecodes as CSV">Shot List</button>
     <button class="tb-btn" id="reset-btn" title="Clear all analysis results">Reset</button>
     <div class="tb-right">
       <div class="status-tag"><span class="pulse" id="pulse-dot"></span><span id="status-text">Ready</span></div>
@@ -472,15 +526,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
       </div>
     </div>
     <div class="dp-actions">
+      <button class="dp-action" id="dp-preview-btn">Preview</button>
       <button class="dp-action" id="dp-save-btn">Save</button>
       <div class="dp-tier-status" id="dp-tier-status"></div>
-      <div class="dp-confirm-bar" id="dp-confirm-bar">
-        <div class="dp-confirm-text">OpenCV + CLIP couldn't categorize this confidently. Use Claude text analysis? (~250 tokens)</div>
-        <div class="dp-confirm-btns">
-          <button class="dp-confirm-yes" id="dp-confirm-yes">Use Claude</button>
-          <button class="dp-confirm-no" id="dp-confirm-no">Skip</button>
-        </div>
-      </div>
       <div class="dp-analyze-row">
         <button class="dp-action" id="dp-analyze-btn">Analyze</button>
         <select class="dp-mode-select" id="dp-mode-select" title="Analysis mode">
@@ -503,6 +551,54 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     </div>
     <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
       <button class="dp-action" id="dp-breakdown-btn">Breakdown</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="pv-overlay" id="pv-overlay">
+  <div class="pv-modal">
+    <div class="pv-header">
+      <div class="pv-title" id="pv-title"></div>
+      <div class="pv-meta" id="pv-meta"></div>
+      <button class="pv-close" id="pv-close">✕</button>
+    </div>
+    <div class="pv-body">
+      <div class="pv-video-pane">
+        <div class="pv-video-wrap">
+          <video id="pv-video" preload="metadata" playsinline></video>
+          <div class="pv-seg-overlay" id="pv-seg-overlay">
+            <div class="pvo-dot" id="pvo-dot"></div>
+            <span class="pvo-type" id="pvo-type"></span>
+            <span class="pvo-use" id="pvo-use"></span>
+          </div>
+        </div>
+        <div class="pv-scrubber">
+          <div class="pv-tl-wrap" id="pv-tl-wrap">
+            <div class="pv-tl-bar" id="pv-tl-bar"></div>
+            <div class="pv-playhead" id="pv-playhead" style="left:0%"></div>
+          </div>
+          <div class="pv-tl-tc">
+            <span>0:00</span>
+            <span id="pv-tc-cur">0:00</span>
+            <span id="pv-tc-dur">0:00</span>
+          </div>
+          <div class="pv-transport">
+            <button class="pvt-btn" id="pv-btn-prev" title="Prev segment">⏮</button>
+            <button class="pvt-btn pvt-play" id="pv-btn-play">▶</button>
+            <button class="pvt-btn" id="pv-btn-next" title="Next segment">⏭</button>
+            <span class="pvt-time" id="pv-tpt-time">0:00 / 0:00</span>
+            <button class="pvt-speed" id="pv-btn-speed">1×</button>
+          </div>
+        </div>
+      </div>
+      <div class="pv-seg-panel">
+        <div class="pvsp-head">
+          <span class="pvsp-title">Segments</span>
+          <span class="pvsp-count" id="pvsp-count"></span>
+        </div>
+        <div class="pvsp-list" id="pvsp-list"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -547,6 +643,7 @@ let _scanning = false;
 let _detailOpen = false;
 let _currentLibFilter = 'all';
 let _currentUsableFilter = 'all';
+let _currentSegFilter = 'all';
 
 // ── Category colors ────────────────────────────────────────────────────────────
 const CAT_COLORS = {
@@ -762,12 +859,73 @@ function buildCatFilter(clips) {
 function filterLibrarySections() {
   const sections = document.querySelectorAll('.cat-section');
   sections.forEach(s => {
-    const match = _currentLibFilter === 'all' || s.dataset.cat === _currentLibFilter;
-    if (match) {
+    const catMatch = _currentLibFilter === 'all' || s.dataset.cat === _currentLibFilter;
+    if (!catMatch) {
+      gsap.to(s, { opacity: 0, height: 0, duration: 0.18, ease: 'power2.in', onComplete: () => s.style.display = 'none' });
+      return;
+    }
+    if (_currentSegFilter === 'all') {
+      gsap.to(s, { opacity: 1, height: 'auto', duration: 0.2, display: 'block', ease: 'power2.out' });
+      return;
+    }
+    // Filter cards within section by segment type
+    const cards = s.querySelectorAll('.frame');
+    let anyVisible = false;
+    cards.forEach(card => {
+      const id = card.dataset.id;
+      const clip = CLIP_MAP[id];
+      const has = clip?.segment_types?.includes(_currentSegFilter);
+      card.style.display = has ? '' : 'none';
+      if (has) anyVisible = true;
+    });
+    if (anyVisible) {
       gsap.to(s, { opacity: 1, height: 'auto', duration: 0.2, display: 'block', ease: 'power2.out' });
     } else {
       gsap.to(s, { opacity: 0, height: 0, duration: 0.18, ease: 'power2.in', onComplete: () => s.style.display = 'none' });
     }
+  });
+}
+
+function buildSegFilter(clips) {
+  const sep = document.getElementById('seg-filter-sep');
+  const list = document.getElementById('seg-filter-list');
+  const types = {};
+  for (const c of clips) {
+    for (const t of (c.segment_types || [])) {
+      types[t] = (types[t] || 0) + 1;
+    }
+  }
+  if (!Object.keys(types).length) { sep.style.display = 'none'; list.innerHTML = ''; return; }
+  sep.style.display = '';
+  const SEG_COLORS = {
+    'Establishing Shot':'#58A6FF','Wide Shot':'#58A6FF',
+    'Hero Moment':'#C9A74A','Golden Hour':'#C9A74A',
+    'Slow Pan':'#00D4CE',
+    'Detail / Texture':'#C264B8','Close-up':'#C264B8',
+    'Action':'#D98C3E','Fast Motion':'#D98C3E',
+    'B-roll':'#7A7D8A','Static':'#7A7D8A',
+    'Nature':'#5DBB8A','Water Shot':'#5DBB8A',
+  };
+  list.innerHTML = '';
+  const allRow = document.createElement('div');
+  allRow.className = 'cat-row' + (_currentSegFilter === 'all' ? ' on' : '');
+  allRow.dataset.seg = 'all';
+  allRow.innerHTML = `<span class="cat-pip" style="background:#555"></span>All shots`;
+  list.appendChild(allRow);
+  for (const [t, n] of Object.entries(types).sort((a,b) => b[1]-a[1])) {
+    const row = document.createElement('div');
+    row.className = 'cat-row' + (_currentSegFilter === t ? ' on' : '');
+    row.dataset.seg = t;
+    row.innerHTML = `<span class="cat-pip" style="background:${SEG_COLORS[t]||'#888'}"></span>${t} <span class="cat-n">${n}</span>`;
+    list.appendChild(row);
+  }
+  list.querySelectorAll('.cat-row').forEach(row => {
+    row.addEventListener('click', () => {
+      list.querySelectorAll('.cat-row').forEach(r => r.classList.remove('on'));
+      row.classList.add('on');
+      _currentSegFilter = row.dataset.seg;
+      filterLibrarySections();
+    });
   });
 }
 
@@ -800,6 +958,7 @@ async function loadClips() {
     : 'Ready';
   buildLibrary(ALL_CLIPS);
   buildCatFilter(ALL_CLIPS);
+  buildSegFilter(ALL_CLIPS);
   buildQualitySummary(ALL_CLIPS);
 }
 
@@ -885,7 +1044,6 @@ function openDetail(card, clipId) {
   document.getElementById('dp-analyze-btn').textContent = analyzed ? 'Re-analyze' : 'Analyze';
   document.getElementById('dp-tier-status').textContent = '';
   document.getElementById('dp-tier-status').className = 'dp-tier-status';
-  document.getElementById('dp-confirm-bar').style.display = 'none';
   document.getElementById('dp-save-btn').dataset.id = clipId;
   document.getElementById('dp-delete-btn').dataset.id = clipId;
   document.getElementById('dp-breakdown').style.display = 'none';
@@ -968,19 +1126,6 @@ document.getElementById('dp-analyze-btn').addEventListener('click', async () => 
   await runAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'), mode);
 });
 
-// Confirmation bar buttons
-document.getElementById('dp-confirm-yes').addEventListener('click', async () => {
-  const id = document.getElementById('dp-analyze-btn').dataset.id;
-  if (!id) return;
-  document.getElementById('dp-confirm-bar').style.display = 'none';
-  await runAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'), 'claude_text');
-});
-document.getElementById('dp-confirm-no').addEventListener('click', () => {
-  document.getElementById('dp-confirm-bar').style.display = 'none';
-  const statusEl = document.getElementById('dp-tier-status');
-  statusEl.textContent = 'Skipped — categorize manually above.';
-  statusEl.className = 'dp-tier-status warn';
-});
 
 // Legacy alias kept for per-card analyze buttons
 async function runClaudeAnalysis(clipId, btn) {
@@ -998,7 +1143,6 @@ async function runAnalysis(clipId, btn, mode) {
   const origText = btn.textContent;
   btn.textContent = 'Analyzing…';
   btn.disabled = true;
-  document.getElementById('dp-confirm-bar').style.display = 'none';
   const statusEl = document.getElementById('dp-tier-status');
   statusEl.textContent = '';
   statusEl.className = 'dp-tier-status';
@@ -1030,10 +1174,9 @@ async function runAnalysis(clipId, btn, mode) {
       } else if (evt.type === 'needs_confirmation') {
         statusEl.textContent = 'Low confidence on both tiers.';
         statusEl.className = 'dp-tier-status warn';
-        if (activeDetail == clipId) {
-          document.getElementById('dp-confirm-bar').style.display = '';
-          gsap.from('#dp-confirm-bar', { opacity: 0, y: -4, duration: 0.2, ease: 'power2.out' });
-        }
+      } else if (evt.type === 'claude_text_fallback') {
+        statusEl.textContent = 'CV + CLIP low confidence → Claude text…';
+        statusEl.className = 'dp-tier-status warn';
       } else if (evt.type === 'complete') {
         const tierLabel = TIER_LABELS[evt.tier] || evt.tier;
         statusEl.textContent = `Done via ${tierLabel}`;
@@ -1110,18 +1253,27 @@ function renderBreakdown(segments) {
           <div class="bk-drow"><span class="bk-dlbl">Framing</span><span class="bk-dval">${seg.composition}</span></div>
         </div>
         <div class="bk-notes">${seg.notes}</div>
+        <div style="display:flex;gap:5px;margin-top:6px">
+          <button class="bk-copy" data-tc="${_fmtTc(seg.start)}–${_fmtTc(seg.end)}" data-type="${seg.type}" data-use="${seg.use}">Copy timecode</button>
+          <button class="bk-copy bk-play-seg" data-start="${seg.start}" style="color:var(--accent);border-color:rgba(201,167,74,.3)">▶ Preview</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 
   const html = `
-    <div class="bk-bar" id="bk-bar">${barItems}</div>
+    <div class="bk-bar-wrap" id="bk-bar-wrap">
+      <div class="bk-bar" id="bk-bar">${barItems}</div>
+      <div class="bk-cursor" id="bk-cursor"></div>
+    </div>
     <div class="bk-tc-row"><span>${_fmtTc(0)}</span><span>${_fmtTc(total)}</span></div>
     <div class="bk-list" id="bk-list">${listItems}</div>`;
 
   document.getElementById('bk-body').innerHTML = html;
 
   const bar = document.getElementById('bk-bar');
+  const barWrap = document.getElementById('bk-bar-wrap');
+  const cursor = document.getElementById('bk-cursor');
   const list = document.getElementById('bk-list');
 
   function activate(idx) {
@@ -1130,16 +1282,49 @@ function renderBreakdown(segments) {
     list.querySelectorAll('.bk-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   }
 
-  bar.querySelectorAll('.bk-seg').forEach(el => {
-    el.addEventListener('click', () => {
+  function moveCursorTo(pct) {
+    cursor.style.left = (pct * 100).toFixed(2) + '%';
+    cursor.style.display = 'block';
+  }
+
+  barWrap.addEventListener('click', e => {
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const t = pct * total;
+    moveCursorTo(pct);
+    const idx = segments.findIndex((s, i) => t >= s.start && (i === segments.length - 1 || t < segments[i + 1].start));
+    if (idx >= 0) activate(idx);
+    const clipId = document.getElementById('dp-save-btn').dataset.id;
+    if (!clipId) return;
+    if (_pvOpenClipId === clipId) {
+      document.getElementById('pv-video').currentTime = t;
+    } else {
+      openPreview(clipId, t);
+    }
+  });
+  list.querySelectorAll('.bk-item').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('bk-copy')) return;
       const idx = +el.dataset.idx;
       activate(activeIdx === idx ? -1 : idx);
     });
   });
-  list.querySelectorAll('.bk-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const idx = +el.dataset.idx;
-      activate(activeIdx === idx ? -1 : idx);
+
+  list.querySelectorAll('.bk-copy').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (btn.classList.contains('bk-play-seg')) {
+        const clipId = document.getElementById('dp-save-btn').dataset.id;
+        if (clipId) openPreview(clipId, +btn.dataset.start);
+        return;
+      }
+      const clipName = CLIP_MAP[document.getElementById('dp-save-btn').dataset.id]?.name || '';
+      const text = `${clipName ? clipName + ' · ' : ''}${btn.dataset.tc} | ${btn.dataset.type} · ${btn.dataset.use}`;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1400);
+      });
     });
   });
 }
@@ -1182,6 +1367,201 @@ document.getElementById('bk-rescan').addEventListener('click', () => {
   const id = document.getElementById('dp-save-btn').dataset.id;
   if (!id) return;
   runBreakdown(id);
+});
+
+// ── Preview modal ──────────────────────────────────────────────────────────────
+const PV_COLOR_MAP = {
+  estab:'#58A6FF', hero:'#C9A74A', pan:'#00D4CE',
+  broll:'#7A7D8A', action:'#D98C3E', close:'#C264B8'
+};
+
+let _pvSegs = [];
+let _pvSpeeds = [1, 1.5, 2, 0.5], _pvSpeedIdx = 0;
+let _pvOpenClipId = null;
+
+function _pvTc(s) {
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function _pvSegAt(t) {
+  return _pvSegs.find(s => t >= s.start && t < s.end) || _pvSegs[_pvSegs.length - 1];
+}
+
+function _pvBuildBar(segs, total) {
+  const bar = document.getElementById('pv-tl-bar');
+  bar.innerHTML = '';
+  segs.forEach((seg, i) => {
+    const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
+    const w = ((seg.end - seg.start) / total * 100).toFixed(2);
+    const el = document.createElement('div');
+    el.className = 'pv-tl-seg';
+    el.style.cssText = `--w:${w};--c:${c};flex:${w}`;
+    el.title = `${seg.type} ${_pvTc(seg.start)}–${_pvTc(seg.end)}`;
+    el.addEventListener('click', () => {});
+    bar.appendChild(el);
+  });
+}
+
+function _pvBuildList(segs) {
+  const list = document.getElementById('pvsp-list');
+  list.innerHTML = '';
+  document.getElementById('pvsp-count').textContent = segs.length ? `${segs.length} segments` : '';
+  if (!segs.length) {
+    list.innerHTML = '<div class="pv-no-segs">No segments — run Analyze first</div>';
+    return;
+  }
+  segs.forEach((seg, i) => {
+    const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
+    const el = document.createElement('div');
+    el.className = 'pvsp-item';
+    el.style.setProperty('--c', c);
+    el.innerHTML = `<div class="pvsp-row">
+      <div class="pvsp-now"></div>
+      <div class="pvsp-dot"></div>
+      <span class="pvsp-tc">${_pvTc(seg.start)}–${_pvTc(seg.end)}</span>
+      <span class="pvsp-type">${seg.type}</span>
+      <span class="pvsp-badge">${seg.use}</span>
+    </div>`;
+    el.addEventListener('click', () => { document.getElementById('pv-video').currentTime = seg.start; });
+    list.appendChild(el);
+  });
+}
+
+function _pvSyncUI(t, total) {
+  const pct = total > 0 ? (t / total * 100).toFixed(3) : 0;
+  document.getElementById('pv-playhead').style.left = pct + '%';
+  document.getElementById('pv-tc-cur').textContent = _pvTc(t);
+  document.getElementById('pv-tpt-time').textContent = `${_pvTc(t)} / ${_pvTc(total)}`;
+
+  if (!_pvSegs.length) return;
+  const seg = _pvSegAt(t);
+  const idx = _pvSegs.indexOf(seg);
+  const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
+
+  document.querySelectorAll('.pv-tl-seg').forEach((el, i) => el.classList.toggle('active', i === idx));
+  const items = document.querySelectorAll('.pvsp-item');
+  items.forEach((el, i) => {
+    const wasActive = el.classList.contains('active');
+    el.classList.toggle('active', i === idx);
+    if (i === idx && !wasActive) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  document.getElementById('pvo-dot').style.background = c;
+  document.getElementById('pvo-type').textContent = seg.type;
+  document.getElementById('pvo-use').textContent = `· ${seg.use}`;
+  document.getElementById('pv-seg-overlay').classList.add('show');
+}
+
+async function openPreview(clipId, seekTo = 0) {
+  const clip = CLIP_MAP[clipId];
+  if (!clip) return;
+
+  // Fetch full segment data
+  let segs = [];
+  try {
+    const r = await fetch(`/api/clips/${clipId}/info`);
+    if (r.ok) { const d = await r.json(); segs = d.segments || []; }
+  } catch(e) {}
+  _pvSegs = Array.isArray(segs) ? segs : [];
+
+  const vid = document.getElementById('pv-video');
+  vid.src = `/api/clips/${clipId}/video`;
+  vid.playbackRate = _pvSpeeds[_pvSpeedIdx];
+
+  document.getElementById('pv-title').textContent = clip.name || clip.filename || '';
+  const meta = [];
+  if (clip.resolution) meta.push(clip.resolution);
+  if (clip.fps) meta.push(Math.round(clip.fps) + 'fps');
+  if (clip.duration_seconds) meta.push(_pvTc(clip.duration_seconds));
+  if (clip.category) meta.push(clip.category);
+  document.getElementById('pv-meta').textContent = meta.join(' · ');
+
+  vid.addEventListener('loadedmetadata', () => {
+    const dur = vid.duration || clip.duration_seconds || 0;
+    document.getElementById('pv-tc-dur').textContent = _pvTc(dur);
+    document.getElementById('pv-tpt-time').textContent = `0:00 / ${_pvTc(dur)}`;
+    _pvBuildBar(_pvSegs, dur);
+    _pvBuildList(_pvSegs);
+    if (seekTo > 0) { vid.currentTime = seekTo; }
+    _pvSyncUI(seekTo, dur);
+  }, { once: true });
+
+  vid.addEventListener('timeupdate', () => {
+    _pvSyncUI(vid.currentTime, vid.duration || 0);
+  });
+  vid.addEventListener('play', () => { document.getElementById('pv-btn-play').textContent = '⏸'; });
+  vid.addEventListener('pause', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
+  vid.addEventListener('ended', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
+
+  // Click bar to scrub — seek to exact pixel position
+  const wrap = document.getElementById('pv-tl-wrap');
+  wrap.onclick = e => {
+    const rect = document.getElementById('pv-tl-bar').getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    vid.currentTime = pct * (vid.duration || 0);
+  };
+
+  _pvOpenClipId = clipId;
+  document.getElementById('pv-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview() {
+  _pvOpenClipId = null;
+  const vid = document.getElementById('pv-video');
+  vid.pause();
+  vid.src = '';
+  document.getElementById('pv-overlay').classList.remove('open');
+  document.getElementById('pv-seg-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('pv-close').addEventListener('click', closePreview);
+document.getElementById('pv-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('pv-overlay')) closePreview();
+});
+
+document.getElementById('pv-btn-play').addEventListener('click', () => {
+  const vid = document.getElementById('pv-video');
+  vid.paused ? vid.play() : vid.pause();
+});
+
+document.getElementById('pv-btn-prev').addEventListener('click', () => {
+  const vid = document.getElementById('pv-video');
+  if (!_pvSegs.length) { vid.currentTime = Math.max(0, vid.currentTime - 10); return; }
+  const cur = _pvSegAt(vid.currentTime);
+  const idx = _pvSegs.indexOf(cur);
+  vid.currentTime = idx > 0 ? _pvSegs[idx - 1].start : 0;
+});
+
+document.getElementById('pv-btn-next').addEventListener('click', () => {
+  const vid = document.getElementById('pv-video');
+  if (!_pvSegs.length) { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); return; }
+  const cur = _pvSegAt(vid.currentTime);
+  const idx = _pvSegs.indexOf(cur);
+  if (idx < _pvSegs.length - 1) vid.currentTime = _pvSegs[idx + 1].start;
+});
+
+document.getElementById('pv-btn-speed').addEventListener('click', () => {
+  _pvSpeedIdx = (_pvSpeedIdx + 1) % _pvSpeeds.length;
+  const vid = document.getElementById('pv-video');
+  vid.playbackRate = _pvSpeeds[_pvSpeedIdx];
+  document.getElementById('pv-btn-speed').textContent = _pvSpeeds[_pvSpeedIdx] + '×';
+});
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('pv-overlay').classList.contains('open')) return;
+  const vid = document.getElementById('pv-video');
+  if (e.code === 'Escape') { closePreview(); return; }
+  if (e.code === 'Space') { e.preventDefault(); vid.paused ? vid.play() : vid.pause(); }
+  if (e.code === 'ArrowLeft')  { e.preventDefault(); vid.currentTime = Math.max(0, vid.currentTime - 5); }
+  if (e.code === 'ArrowRight') { e.preventDefault(); vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 5); }
+});
+
+document.getElementById('dp-preview-btn').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (id) openPreview(id);
 });
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
@@ -1493,6 +1873,9 @@ document.getElementById('dp-debug-toggle').addEventListener('click', () => {
 // ── Export ────────────────────────────────────────────────────────────────────
 document.getElementById('export-btn').addEventListener('click', () => {
   window.location.href = '/api/export?format=csv';
+});
+document.getElementById('shotlist-btn').addEventListener('click', () => {
+  window.location.href = '/api/export/shotlist';
 });
 
 // ── Reset all analysis ────────────────────────────────────────────────────────
