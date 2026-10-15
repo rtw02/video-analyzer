@@ -164,7 +164,8 @@ def get_all_clips(usable_only: bool = False, analyzed_only: bool = False,
 def update_clip_manual(clip_id: int, fields: dict, db_path: Path = DB_PATH):
     """Save manually entered metadata for a clip."""
     allowed = {"category", "quality_score", "scene_type", "mood", "lighting",
-               "is_usable", "notes", "analyzed_at"}
+               "is_usable", "notes", "analyzed_at", "bin_status", "used_in_edit",
+               "is_portrait_override", "rotation_override"}
     data = {k: v for k, v in fields.items() if k in allowed}
     if not data:
         return
@@ -328,10 +329,12 @@ def get_groups(db_path: Path = DB_PATH) -> list[dict]:
     groups = []
     for row in rows:
         g = dict(row)
-        count = conn.execute(
-            "SELECT COUNT(*) as n FROM clip_group_members WHERE group_id = ?", (g["id"],)
-        ).fetchone()["n"]
-        g["clip_count"] = count
+        members = conn.execute(
+            "SELECT clip_id FROM clip_group_members WHERE group_id = ? ORDER BY position",
+            (g["id"],)
+        ).fetchall()
+        g["clip_count"] = len(members)
+        g["clip_ids"] = [m["clip_id"] for m in members]
         groups.append(g)
     conn.close()
     return groups
@@ -436,7 +439,14 @@ def delete_group(group_id: int, db_path: Path = DB_PATH):
 
 def _migrate(conn: sqlite3.Connection):
     """Add new columns when upgrading an existing DB."""
-    for col, defn in [("segments", "TEXT"), ("segments_at", "TEXT")]:
+    for col, defn in [
+        ("segments", "TEXT"),
+        ("segments_at", "TEXT"),
+        ("bin_status", "TEXT"),
+        ("used_in_edit", "INTEGER DEFAULT 0"),
+        ("is_portrait_override", "INTEGER DEFAULT NULL"),
+        ("rotation_override", "INTEGER DEFAULT NULL"),
+    ]:
         try:
             conn.execute(f"ALTER TABLE clips ADD COLUMN {col} {defn}")
             conn.commit()
@@ -476,6 +486,32 @@ def reset_all_analysis(db_path: Path = DB_PATH):
         notes=NULL, raw_analysis=NULL""")
     conn.commit()
     conn.close()
+
+
+def get_similar_clips(clip_id: int, limit: int = 12, db_path: Path = DB_PATH) -> list[dict]:
+    """Return clips scored by attribute similarity to the given clip."""
+    conn = get_connection(db_path)
+    ref = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    if not ref:
+        conn.close()
+        return []
+    ref = dict(ref)
+    rows = conn.execute("SELECT * FROM clips WHERE id != ? AND analyzed_at IS NOT NULL", (clip_id,)).fetchall()
+    conn.close()
+    scored = []
+    for row in rows:
+        r = dict(row)
+        score = 0
+        if r.get("category") == ref.get("category"):       score += 3
+        if r.get("scene_type") == ref.get("scene_type"):   score += 2
+        if r.get("mood") == ref.get("mood"):               score += 2
+        if r.get("lighting") == ref.get("lighting"):       score += 1
+        dur_diff = abs((r.get("duration_seconds") or 0) - (ref.get("duration_seconds") or 0))
+        if dur_diff < 5:                                    score += 1
+        if score > 0:
+            scored.append((score, r))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [r for _, r in scored[:limit]]
 
 
 def get_trends_age(db_path: Path = DB_PATH) -> str | None:

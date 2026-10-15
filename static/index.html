@@ -128,6 +128,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .frame-analyze-btn:hover{background:rgba(201,167,74,.3)}
 .frame-thumb{width:100%;aspect-ratio:16/9;background:var(--surface-2);display:block;overflow:hidden;position:relative}
 .frame-thumb img,.frame-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
+.frame-thumb.portrait img,.frame-thumb.portrait canvas{object-fit:contain;background:#000}
 .frame-dur{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.9);padding:1px 4px;border-radius:2px;font-variant-numeric:tabular-nums;z-index:1}
 .frame-meta{padding:6px 8px 7px}
 .frame-name{font-size:11px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);margin-bottom:3px}
@@ -144,6 +145,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 .dp-head{padding:14px 16px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:flex-start;gap:10px}
 .dp-thumb-wrap{width:88px;aspect-ratio:16/9;background:var(--surface-2);border-radius:2px;overflow:hidden;flex-shrink:0}
 .dp-thumb-wrap img,.dp-thumb-wrap canvas{width:100%;height:100%;display:block;object-fit:cover}
+.dp-thumb-wrap.portrait img,.dp-thumb-wrap.portrait canvas{object-fit:contain;background:#000}
 .dp-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px}
 .dp-sub{font-size:10px;color:var(--text-3);margin-bottom:6px}
 .dp-qs{display:flex;align-items:center;gap:5px;font-size:10px}
@@ -360,6 +362,87 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
+
+/* ── Bin / cull badges ── */
+.bin-badge{position:absolute;top:6px;left:6px;z-index:3;font-size:8px;font-weight:700;padding:2px 5px;border-radius:2px;letter-spacing:.05em;pointer-events:none}
+.bin-badge.keep{background:rgba(93,187,138,.2);border:1px solid rgba(93,187,138,.4);color:#5DBB8A}
+.bin-badge.cut{background:rgba(204,78,78,.18);border:1px solid rgba(204,78,78,.4);color:var(--bad)}
+.bin-badge.maybe{background:rgba(201,167,74,.15);border:1px solid rgba(201,167,74,.3);color:var(--accent)}
+.used-badge{position:absolute;top:6px;right:28px;z-index:3;font-size:8px;font-weight:600;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3);color:#58A6FF;padding:2px 5px;border-radius:2px;pointer-events:none}
+
+/* Bin quick-action overlay (shows on hover) */
+.frame-bin-wrap{position:absolute;bottom:0;left:0;right:0;z-index:4;display:flex;gap:4px;padding:5px;background:linear-gradient(transparent,rgba(0,0,0,.6));opacity:0;transition:opacity .12s;pointer-events:none}
+.frame:hover .frame-bin-wrap{opacity:1;pointer-events:auto}
+.bko{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;border:1px solid;flex-shrink:0;transition:all .1s}
+.bko.k{border-color:#5DBB8A;color:#5DBB8A;background:rgba(93,187,138,.1)}
+.bko.k:hover{background:rgba(93,187,138,.35)}
+.bko.x{border-color:var(--bad);color:var(--bad);background:rgba(204,78,78,.1)}
+.bko.x:hover{background:rgba(204,78,78,.3)}
+.bko.m{border-color:var(--accent);color:var(--accent);background:rgba(201,167,74,.08)}
+.bko.m:hover{background:rgba(201,167,74,.25)}
+.bko.u{border-color:#58A6FF;color:#58A6FF;background:rgba(88,166,255,.08);margin-left:auto}
+.bko.u:hover{background:rgba(88,166,255,.22)}
+.bko.r{border-color:rgba(168,171,186,.4);color:var(--text-3);background:transparent}
+.bko.r:hover{background:rgba(168,171,186,.15);color:var(--text)}
+/* Portrait orientation badge */
+.portrait-badge{position:absolute;top:6px;right:6px;z-index:3;font-size:9px;line-height:1;padding:2px 4px;border-radius:2px;background:rgba(30,32,40,.7);border:1px solid rgba(168,171,186,.25);color:var(--text-3);pointer-events:none;letter-spacing:.02em}
+.portrait-badge.override{border-color:rgba(201,167,74,.5);color:var(--accent)}
+
+/* Sort / view controls */
+.sort-select{margin-left:auto;font-size:11px;color:var(--text-3);background:transparent;border:1px solid var(--border);border-radius:3px;cursor:pointer;outline:none;font-family:'Epilogue',sans-serif;padding:2px 6px}
+.sort-select option{background:var(--bg)}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.vtb{padding:3px 8px;font-size:10px;background:transparent;border:none;color:var(--text-3);cursor:pointer;transition:all .1s}
+.vtb.on{background:var(--surface-2);color:var(--text)}
+.pill-filter.bin-pill{font-size:10px}
+.pill-filter.bin-pill.keep.on{background:rgba(93,187,138,.12);border-color:rgba(93,187,138,.35);color:#5DBB8A}
+.pill-filter.bin-pill.cut.on{background:rgba(204,78,78,.1);border-color:rgba(204,78,78,.3);color:var(--bad)}
+.pill-filter.bin-pill.maybe.on{background:rgba(201,167,74,.1);border-color:rgba(201,167,74,.25);color:var(--accent)}
+
+/* Sidebar extras */
+.rail-sect-head{font-size:9px;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;padding:6px 0 3px;opacity:.7}
+.bin-row,.coll-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;color:var(--text-2);transition:background .1s}
+.bin-row:hover,.coll-row:hover{background:var(--surface-2)}
+.bin-row.on,.coll-row.on{background:var(--surface-2);color:var(--text)}
+.bin-pip,.coll-icon{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.coll-icon{border-radius:2px}
+.coll-n{font-size:10px;color:var(--text-3);margin-left:auto}
+.coll-add{width:100%;text-align:left;background:none;border:none;color:var(--text-3);font-size:10px;padding:4px 8px;cursor:pointer;font-family:'Epilogue',sans-serif;transition:color .1s}
+.coll-add:hover{color:var(--accent)}
+
+/* Timeline view */
+.tl-day{margin-bottom:24px}
+.tl-day-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.tl-day-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--text-2)}
+.tl-day-n{font-size:10px;color:var(--text-3)}
+.tl-day-line{flex:1;height:1px;background:var(--border-soft)}
+
+/* Quick review modal */
+.review-overlay{position:fixed;inset:0;background:rgba(6,7,10,.96);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center}
+.review-overlay.open{display:flex}
+.rev-progress{position:absolute;top:0;left:0;right:0;height:2px;background:var(--surface-3)}
+.rev-progress-fill{height:100%;background:var(--accent);transition:width .15s}
+.rev-close{position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--text-3);font-size:18px;cursor:pointer;line-height:1}
+.rev-close:hover{color:var(--text)}
+.rev-thumb{width:min(72vw,840px);aspect-ratio:16/9;background:var(--surface-2);position:relative;border-radius:4px;overflow:hidden}
+.rev-thumb img,.rev-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
+.rev-bin-flash{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .08s}
+.rev-meta{text-align:center;margin-top:14px}
+.rev-name{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);margin-bottom:4px}
+.rev-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
+.rev-counter{font-size:11px;color:var(--text-3)}
+.rev-actions{display:flex;gap:10px;margin-top:18px}
+.rev-btn{padding:8px 22px;border-radius:4px;font-family:'Epilogue',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;letter-spacing:.04em;transition:all .1s}
+.rev-btn.keep{background:rgba(93,187,138,.12);border-color:rgba(93,187,138,.4);color:#5DBB8A}
+.rev-btn.keep:hover,.rev-btn.keep.active{background:rgba(93,187,138,.3)}
+.rev-btn.cut{background:rgba(204,78,78,.1);border-color:rgba(204,78,78,.35);color:var(--bad)}
+.rev-btn.cut:hover,.rev-btn.cut.active{background:rgba(204,78,78,.28)}
+.rev-btn.maybe{background:rgba(201,167,74,.08);border-color:rgba(201,167,74,.3);color:var(--accent)}
+.rev-btn.maybe:hover,.rev-btn.maybe.active{background:rgba(201,167,74,.22)}
+.rev-nav-row{display:flex;align-items:center;gap:16px;margin-top:12px}
+.rev-nav-btn{background:transparent;border:1px solid var(--border);color:var(--text-3);padding:5px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-family:'Epilogue',sans-serif}
+.rev-nav-btn:hover{color:var(--text);border-color:var(--surface-3)}
+.rev-hint{font-size:10px;color:var(--text-3);margin-top:6px;letter-spacing:.03em}
 </style>
 </head>
 <body>
@@ -382,6 +465,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     <div class="rail-sect" id="cat-filter-list"></div>
     <div class="rail-sep" id="seg-filter-sep" style="display:none"></div>
     <div class="rail-sect" id="seg-filter-list"></div>
+    <div class="rail-sep" id="bin-filter-sep" style="display:none"></div>
+    <div class="rail-sect" id="bin-filter-list"></div>
+    <div class="rail-sep"></div>
+    <div class="rail-sect">
+      <div class="rail-sect-head">Collections</div>
+      <div id="coll-list"></div>
+      <button class="coll-add" id="coll-add-btn">+ New collection</button>
+    </div>
     <div class="quality-summary" id="quality-summary" style="display:none">
       <div class="qs-head">Quality distribution</div>
       <div class="qs-row">
@@ -428,7 +519,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
         <span class="view-title">Library</span>
         <button class="pill-filter on" data-filter="all">All</button>
         <button class="pill-filter" data-filter="usable">Usable only</button>
-        <span class="sort-ctrl" id="sort-ctrl">Quality ↓</span>
+        <button class="pill-filter bin-pill keep" data-filter="keep">Keep</button>
+        <button class="pill-filter bin-pill cut" data-filter="cut">Cut</button>
+        <button class="pill-filter bin-pill maybe" data-filter="maybe">Maybe</button>
+        <button class="tb-btn" id="review-btn" title="Quick review mode">Review</button>
+        <div class="view-toggle" style="margin-left:auto">
+          <button class="vtb on" id="vtb-grid" title="Grid view">▦</button>
+          <button class="vtb" id="vtb-timeline" title="Timeline view">≡</button>
+        </div>
+        <select class="sort-select" id="sort-select">
+          <option value="quality">Quality ↓</option>
+          <option value="duration">Duration ↓</option>
+          <option value="filename">Name A–Z</option>
+          <option value="date">Date ↓</option>
+        </select>
       </div>
       <div class="scroll" id="library-scroll">
         <div id="library-content"></div>
@@ -540,6 +644,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
         </select>
       </div>
       <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
+      <button class="dp-action" id="dp-similar-btn" style="background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.25);color:#58A6FF">Find similar</button>
+      <button class="dp-action" id="dp-rotate-btn" title="Toggle portrait / landscape orientation">⟳ Portrait</button>
+      <button class="dp-action" id="dp-used-btn">Mark as used in edit</button>
+      <div id="dp-bin-row" style="display:flex;gap:4px;margin-top:2px">
+        <button class="dp-action" id="dp-bin-keep" style="flex:1;background:rgba(93,187,138,.1);border-color:rgba(93,187,138,.3);color:#5DBB8A">K Keep</button>
+        <button class="dp-action" id="dp-bin-maybe" style="flex:1;background:rgba(201,167,74,.08);border-color:rgba(201,167,74,.25);color:var(--accent)">M Maybe</button>
+        <button class="dp-action" id="dp-bin-cut" style="flex:1;background:rgba(204,78,78,.08);border-color:rgba(204,78,78,.2);color:var(--bad)">X Cut</button>
+      </div>
+      <select class="dp-mode-select" id="dp-coll-select" style="width:100%;padding:6px;margin-top:2px;font-size:11px" title="Add to collection">
+        <option value="">Add to collection…</option>
+      </select>
     </div>
     <!-- Breakdown panel -->
     <div class="dp-breakdown" id="dp-breakdown" style="display:none">
@@ -561,11 +676,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
     <div class="pv-header">
       <div class="pv-title" id="pv-title"></div>
       <div class="pv-meta" id="pv-meta"></div>
+      <button class="pv-close" id="pv-rotate-btn" title="Rotate 90° CW" style="display:none">⟳</button>
       <button class="pv-close" id="pv-close">✕</button>
     </div>
     <div class="pv-body">
       <div class="pv-video-pane">
-        <div class="pv-video-wrap">
+        <div class="pv-video-wrap" id="pv-video-wrap">
           <video id="pv-video" preload="metadata" playsinline></video>
           <div class="pv-seg-overlay" id="pv-seg-overlay">
             <div class="pvo-dot" id="pvo-dot"></div>
@@ -632,6 +748,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
   </div>
 </div>
 
+<!-- Quick review modal -->
+<div class="review-overlay" id="review-overlay">
+  <div class="rev-progress"><div class="rev-progress-fill" id="rev-progress-fill"></div></div>
+  <button class="rev-close" id="rev-close">✕</button>
+  <div class="rev-thumb" id="rev-thumb"></div>
+  <div class="rev-meta">
+    <div class="rev-name" id="rev-name"></div>
+    <div class="rev-tags" id="rev-tags"></div>
+    <div class="rev-counter" id="rev-counter"></div>
+  </div>
+  <div class="rev-actions">
+    <button class="rev-btn keep" id="rev-keep">K  Keep</button>
+    <button class="rev-btn maybe" id="rev-maybe">M  Maybe</button>
+    <button class="rev-btn cut" id="rev-cut">X  Cut</button>
+  </div>
+  <div class="rev-nav-row">
+    <button class="rev-nav-btn" id="rev-prev">← Prev</button>
+    <button class="rev-nav-btn" id="rev-next">Next →</button>
+  </div>
+  <div class="rev-hint">K / M / X to bin · ← → to navigate · Space to preview · Esc to exit</div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -644,6 +782,13 @@ let _detailOpen = false;
 let _currentLibFilter = 'all';
 let _currentUsableFilter = 'all';
 let _currentSegFilter = 'all';
+let _currentBinFilter = 'all';   // all | keep | cut | maybe
+let _currentSort = 'quality';    // quality | duration | filename | date
+let _viewMode = 'grid';           // grid | timeline
+let _currentCollFilter = null;   // null | group_id (number)
+let _similarMode = false;        // showing find-similar results
+let _similarIds = new Set();
+let _hoveredClipId = null;       // for keyboard bin shortcuts
 
 // ── Category colors ────────────────────────────────────────────────────────────
 const CAT_COLORS = {
@@ -693,10 +838,10 @@ function qColor(qs) {
 }
 
 // ── Thumbnail ──────────────────────────────────────────────────────────────────
-function thumbEl(clip, w, h) {
+function thumbEl(clip, w, h, bust) {
   if (clip.has_thumb) {
     const img = document.createElement('img');
-    img.src = `/api/clips/${clip.id}/thumb`;
+    img.src = `/api/clips/${clip.id}/thumb${bust ? '?t=' + bust : ''}`;
     img.loading = 'lazy';
     img.onerror = () => { img.replaceWith(fallbackCanvas(w, h, clip)); };
     return img;
@@ -727,51 +872,97 @@ function fallbackCanvas(w, h, clip) {
 }
 
 // ── Build library ──────────────────────────────────────────────────────────────
+function sortClips(clips) {
+  const arr = [...clips];
+  if (_currentSort === 'quality')  arr.sort((a,b) => (b.quality_score||0) - (a.quality_score||0));
+  if (_currentSort === 'duration') arr.sort((a,b) => (b.duration_seconds||0) - (a.duration_seconds||0));
+  if (_currentSort === 'filename') arr.sort((a,b) => a.name.localeCompare(b.name));
+  if (_currentSort === 'date')     arr.sort((a,b) => (b.file_date||'').localeCompare(a.file_date||''));
+  return arr;
+}
+
+function applyFilters(clips) {
+  let out = clips;
+  if (_currentUsableFilter === 'usable') out = out.filter(c => c.is_usable);
+  if (_currentBinFilter !== 'all') out = out.filter(c => c.bin_status === _currentBinFilter);
+  if (_similarMode) out = out.filter(c => _similarIds.has(c.id));
+  if (_currentCollFilter !== null) {
+    const g = _GROUPS.find(g => g.id === _currentCollFilter);
+    if (g) {
+      const ids = new Set((g.clip_ids || []).map(Number));
+      out = out.filter(c => ids.has(c.id));
+    }
+  }
+  return out;
+}
+
 function buildLibrary(clips) {
   const content = document.getElementById('library-content');
   content.innerHTML = '';
 
-  const filtered = _currentUsableFilter === 'usable' ? clips.filter(c => c.is_usable) : clips;
+  const filtered = applyFilters(clips);
 
   if (filtered.length === 0) {
     content.innerHTML = `<div class="empty-state">
-      <div class="empty-title">No clips yet</div>
-      <div class="empty-sub">Enter a folder path and click Scan to analyze your video files.</div>
+      <div class="empty-title">${_similarMode ? 'No similar clips' : 'No clips yet'}</div>
+      <div class="empty-sub">${_similarMode ? 'Try a different clip.' : 'Enter a folder path and click Scan to analyze your video files.'}</div>
     </div>`;
     return;
   }
 
+  const sorted = sortClips(filtered);
+
+  if (_viewMode === 'timeline') {
+    buildTimelineView(content, sorted);
+  } else {
+    buildGridView(content, sorted);
+  }
+
+  const cards = content.querySelectorAll('.frame');
+  gsap.from(cards, { opacity: 0, y: 8, duration: 0.35, stagger: 0.02, ease: 'power2.out', clearProps: 'all' });
+}
+
+function buildGridView(content, clips) {
   // Group by category
   const groups = {};
-  for (const clip of filtered) {
+  for (const clip of clips) {
     const cat = clip.category || 'other';
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(clip);
   }
-
-  const sections = [];
   for (const [cat, catClips] of Object.entries(groups)) {
     const section = document.createElement('div');
     section.className = 'cat-section';
     section.dataset.cat = cat;
-
     const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     section.innerHTML = `
       <div class="cat-title">${label} <span class="cat-n-label">${catClips.length} clips</span><span class="cat-title-line"></span></div>
       <div class="clip-grid"></div>`;
-
     const grid = section.querySelector('.clip-grid');
-    for (const clip of catClips) {
-      const card = buildCard(clip);
-      grid.appendChild(card);
-    }
+    for (const clip of catClips) grid.appendChild(buildCard(clip));
     content.appendChild(section);
-    sections.push(section);
   }
+}
 
-  // GSAP stagger entrance
-  const cards = content.querySelectorAll('.frame');
-  gsap.from(cards, { opacity: 0, y: 8, duration: 0.35, stagger: 0.025, ease: 'power2.out', clearProps: 'all' });
+function buildTimelineView(content, clips) {
+  const byDate = {};
+  for (const clip of clips) {
+    const d = clip.file_date || 'Unknown date';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(clip);
+  }
+  for (const [date, dayClips] of Object.entries(byDate)) {
+    const section = document.createElement('div');
+    section.className = 'tl-day cat-section';
+    section.dataset.cat = 'all'; // keep filterLibrarySections compatible
+    const label = date !== 'Unknown date' ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', {weekday:'short',month:'long',day:'numeric'}) : date;
+    section.innerHTML = `
+      <div class="tl-day-head"><span class="tl-day-label">${label}</span><span class="tl-day-n">${dayClips.length} clips</span><div class="tl-day-line"></div></div>
+      <div class="clip-grid"></div>`;
+    const grid = section.querySelector('.clip-grid');
+    for (const clip of dayClips) grid.appendChild(buildCard(clip));
+    content.appendChild(section);
+  }
 }
 
 function buildCard(clip) {
@@ -784,12 +975,60 @@ function buildCard(clip) {
   card.dataset.analyzed = analyzed ? '1' : '0';
 
   const thumb = document.createElement('div');
-  thumb.className = 'frame-thumb';
+  thumb.className = `frame-thumb${clip.is_portrait ? ' portrait' : ''}`;
   thumb.appendChild(thumbEl(clip, 240, 135));
   const dur = document.createElement('div');
   dur.className = 'frame-dur';
   dur.textContent = clip.duration_str;
   thumb.appendChild(dur);
+
+  if (clip.bin_status) {
+    const bb = document.createElement('div');
+    bb.className = `bin-badge ${clip.bin_status}`;
+    bb.textContent = clip.bin_status.toUpperCase();
+    bb.id = `bin-badge-${clip.id}`;
+    thumb.appendChild(bb);
+  }
+  if (clip.used_in_edit) {
+    const ub = document.createElement('div');
+    ub.className = 'used-badge';
+    ub.textContent = 'USED';
+    ub.id = `used-badge-${clip.id}`;
+    thumb.appendChild(ub);
+  }
+  if (clip.is_portrait || clip.rotation_override) {
+    const pb = document.createElement('div');
+    pb.className = `portrait-badge${clip.rotation_override ? ' override' : ''}`;
+    pb.id = `portrait-badge-${clip.id}`;
+    pb.textContent = clip.rotation_override ? `+${clip.rotation_override}°` : '↕';
+    pb.title = clip.rotation_override ? `Rotation override: +${clip.rotation_override}°` : 'Portrait';
+    thumb.appendChild(pb);
+  }
+
+  // Bin / used-in-edit quick actions overlay
+  const binWrap = document.createElement('div');
+  binWrap.className = 'frame-bin-wrap';
+  ['K','M','X'].forEach(k => {
+    const b = document.createElement('button');
+    b.className = `bko ${k.toLowerCase()}`;
+    b.textContent = k;
+    b.title = k === 'K' ? 'Keep' : k === 'X' ? 'Cut' : 'Maybe';
+    b.addEventListener('click', e => { e.stopPropagation(); setBin(clip.id, k === 'K' ? 'keep' : k === 'X' ? 'cut' : 'maybe'); });
+    binWrap.appendChild(b);
+  });
+  const ub2 = document.createElement('button');
+  ub2.className = 'bko u';
+  ub2.textContent = '✓';
+  ub2.title = 'Toggle used in edit';
+  ub2.addEventListener('click', e => { e.stopPropagation(); toggleUsed(clip.id); });
+  binWrap.appendChild(ub2);
+  const rb = document.createElement('button');
+  rb.className = 'bko r';
+  rb.textContent = '⟳';
+  rb.title = 'Toggle portrait/landscape orientation';
+  rb.addEventListener('click', e => { e.stopPropagation(); rotateClip(clip.id); });
+  binWrap.appendChild(rb);
+  thumb.appendChild(binWrap);
 
   // Per-card analyze button (shows on hover for unanalyzed clips)
   if (!analyzed) {
@@ -815,8 +1054,80 @@ function buildCard(clip) {
 
   card.appendChild(thumb);
   card.appendChild(meta);
+  card.addEventListener('mouseenter', () => { _hoveredClipId = clip.id; });
+  card.addEventListener('mouseleave', () => { if (_hoveredClipId === clip.id) _hoveredClipId = null; });
   card.addEventListener('click', () => openDetail(card, clip.id));
   return card;
+}
+
+async function setBin(clipId, status) {
+  const clip = CLIP_MAP[clipId];
+  if (!clip) return;
+  const prev = clip.bin_status;
+  const newStatus = prev === status ? null : status; // toggle off if same
+  clip.bin_status = newStatus;
+  await fetch(`/api/clips/${clipId}/flag`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ bin_status: newStatus || '' }) });
+  // Update badge on card
+  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
+  if (card) {
+    let bb = document.getElementById(`bin-badge-${clipId}`);
+    if (newStatus) {
+      if (!bb) { bb = document.createElement('div'); bb.id = `bin-badge-${clipId}`; card.querySelector('.frame-thumb').appendChild(bb); }
+      bb.className = `bin-badge ${newStatus}`;
+      bb.textContent = newStatus.toUpperCase();
+    } else if (bb) { bb.remove(); }
+  }
+  if (_currentBinFilter !== 'all') buildLibrary(ALL_CLIPS);
+}
+
+async function toggleUsed(clipId) {
+  const clip = CLIP_MAP[clipId];
+  if (!clip) return;
+  clip.used_in_edit = !clip.used_in_edit;
+  await fetch(`/api/clips/${clipId}/flag`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ used_in_edit: clip.used_in_edit }) });
+  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
+  if (card) {
+    let ub = document.getElementById(`used-badge-${clipId}`);
+    if (clip.used_in_edit) {
+      if (!ub) { ub = document.createElement('div'); ub.id = `used-badge-${clipId}`; ub.className = 'used-badge'; ub.textContent = 'USED'; card.querySelector('.frame-thumb').appendChild(ub); }
+    } else if (ub) { ub.remove(); }
+  }
+}
+
+async function rotateClip(clipId) {
+  const r = await fetch(`/api/clips/${clipId}/rotate`, { method: 'PATCH' });
+  if (!r.ok) return;
+  const data = await r.json();
+  const clip = data.clip;
+  CLIP_MAP[clipId] = clip;
+  // Update card thumbnail + portrait badge
+  const bust = Date.now();
+  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
+  if (card) {
+    const thumbWrap = card.querySelector('.frame-thumb');
+    thumbWrap.classList.toggle('portrait', !!clip.is_portrait);
+    const oldThumb = thumbWrap.querySelector('img, canvas');
+    if (oldThumb) oldThumb.replaceWith(thumbEl(clip, 240, 135, bust));
+    let pb = document.getElementById(`portrait-badge-${clipId}`);
+    if (clip.is_portrait || clip.rotation_override) {
+      if (!pb) { pb = document.createElement('div'); pb.id = `portrait-badge-${clipId}`; thumbWrap.appendChild(pb); }
+      pb.className = `portrait-badge${clip.rotation_override ? ' override' : ''}`;
+      pb.textContent = clip.rotation_override ? `+${clip.rotation_override}°` : '↕';
+      pb.title = clip.rotation_override ? `Rotation override: +${clip.rotation_override}°` : 'Portrait';
+    } else if (pb) { pb.remove(); }
+  }
+  // Refresh detail panel if open
+  if (activeDetail === clipId) {
+    const dpWrap = document.getElementById('dp-thumb-wrap');
+    dpWrap.innerHTML = '';
+    dpWrap.classList.toggle('portrait', !!clip.is_portrait);
+    dpWrap.appendChild(thumbEl(clip, 176, 99, bust));
+    const rotBtn = document.getElementById('dp-rotate-btn');
+    if (rotBtn) {
+      const deg = clip.rotation_override || 0;
+      rotBtn.textContent = `⟳ +90° (${deg}° total)`;
+    }
+  }
 }
 
 // ── Category filter sidebar ───────────────────────────────────────────────────
@@ -929,6 +1240,91 @@ function buildSegFilter(clips) {
   });
 }
 
+// ── Bin filter sidebar ─────────────────────────────────────────────────────────
+function buildBinFilter(clips) {
+  const sep = document.getElementById('bin-filter-sep');
+  const list = document.getElementById('bin-filter-list');
+  const hasBinned = clips.some(c => c.bin_status);
+  if (!hasBinned) { sep.style.display = 'none'; list.innerHTML = ''; return; }
+  sep.style.display = '';
+  list.innerHTML = `<div class="rail-sect-head">Cull status</div>`;
+  const bins = [
+    {k:'all',  label:'All',   pip:'#555'},
+    {k:'keep', label:'Keep',  pip:'#5DBB8A'},
+    {k:'maybe',label:'Maybe', pip:'#C9A74A'},
+    {k:'cut',  label:'Cut',   pip:'var(--bad)'},
+  ];
+  bins.forEach(({k, label, pip}) => {
+    const n = k === 'all' ? clips.length : clips.filter(c => c.bin_status === k).length;
+    const row = document.createElement('div');
+    row.className = 'bin-row' + (_currentBinFilter === k ? ' on' : '');
+    row.dataset.bin = k;
+    row.innerHTML = `<span class="bin-pip" style="background:${pip}"></span>${label} <span class="cat-n">${n}</span>`;
+    row.addEventListener('click', () => {
+      list.querySelectorAll('.bin-row').forEach(r => r.classList.remove('on'));
+      row.classList.add('on');
+      _currentBinFilter = k;
+      buildLibrary(ALL_CLIPS);
+    });
+    list.appendChild(row);
+  });
+}
+
+// ── Collections sidebar ────────────────────────────────────────────────────────
+let _GROUPS = [];
+
+async function loadCollections() {
+  try {
+    const r = await fetch('/api/groups');
+    if (r.ok) { const d = await r.json(); _GROUPS = d.groups || []; }
+  } catch(e) { _GROUPS = []; }
+  renderCollectionsSidebar();
+  if (typeof refreshCollSelect === 'function') refreshCollSelect();
+}
+
+function renderCollectionsSidebar() {
+  const list = document.getElementById('coll-list');
+  list.innerHTML = '';
+  const allRow = document.createElement('div');
+  allRow.className = 'coll-row' + (_currentCollFilter === null ? ' on' : '');
+  allRow.innerHTML = `<span class="coll-icon" style="background:#555"></span>All clips <span class="coll-n">${ALL_CLIPS.length}</span>`;
+  allRow.addEventListener('click', () => { _currentCollFilter = null; _similarMode = false; renderCollectionsSidebar(); buildLibrary(ALL_CLIPS); });
+  list.appendChild(allRow);
+  for (const g of _GROUPS) {
+    const row = document.createElement('div');
+    row.className = 'coll-row' + (_currentCollFilter === g.id ? ' on' : '');
+    row.innerHTML = `<span class="coll-icon" style="background:${catColor('travel')}"></span>${g.name} <span class="coll-n">${g.clip_count||0}</span>`;
+    row.addEventListener('click', () => { _currentCollFilter = g.id; _similarMode = false; renderCollectionsSidebar(); buildLibrary(ALL_CLIPS); });
+    list.appendChild(row);
+  }
+}
+
+async function createCollection(name) {
+  const r = await fetch('/api/groups', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, group_type:'collection'}) });
+  if (r.ok) { await loadCollections(); }
+}
+
+async function addToCollection(clipId, groupId) {
+  await fetch(`/api/groups/${groupId}/clips`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({clip_id: clipId}) });
+  await loadCollections();
+}
+
+// ── Find similar ───────────────────────────────────────────────────────────────
+async function findSimilar(clipId) {
+  _similarMode = true;
+  _currentCollFilter = null;
+  _similarIds.clear();
+  try {
+    const r = await fetch(`/api/clips/similar/${clipId}`);
+    if (r.ok) {
+      const d = await r.json();
+      (d.clips || []).forEach(c => _similarIds.add(c.id));
+    }
+  } catch(e) {}
+  renderCollectionsSidebar();
+  buildLibrary(ALL_CLIPS);
+}
+
 // ── Quality summary ────────────────────────────────────────────────────────────
 function buildQualitySummary(clips) {
   const hi = clips.filter(c => c.quality_score >= 7).length;
@@ -959,7 +1355,9 @@ async function loadClips() {
   buildLibrary(ALL_CLIPS);
   buildCatFilter(ALL_CLIPS);
   buildSegFilter(ALL_CLIPS);
+  buildBinFilter(ALL_CLIPS);
   buildQualitySummary(ALL_CLIPS);
+  loadCollections();
 }
 
 // ── Detail panel ───────────────────────────────────────────────────────────────
@@ -1001,6 +1399,7 @@ function openDetail(card, clipId) {
   // Thumbnail
   const wrap = document.getElementById('dp-thumb-wrap');
   wrap.innerHTML = '';
+  wrap.classList.toggle('portrait', !!clip.is_portrait);
   wrap.appendChild(thumbEl(clip, 176, 99));
 
   // Populate editable fields
@@ -1048,6 +1447,13 @@ function openDetail(card, clipId) {
   document.getElementById('dp-delete-btn').dataset.id = clipId;
   document.getElementById('dp-breakdown').style.display = 'none';
   document.getElementById('bk-body').innerHTML = '';
+  // Bin + used state
+  document.getElementById('dp-used-btn').textContent = clip.used_in_edit ? 'Unmark used in edit' : 'Mark as used in edit';
+  const rotBtn = document.getElementById('dp-rotate-btn');
+  const rotDeg = clip.rotation_override || 0;
+  rotBtn.textContent = rotDeg ? `⟳ +90° (${rotDeg}° total)` : '⟳ Rotate 90°';
+  rotBtn.title = rotDeg ? `Extra rotation: ${rotDeg}° — click to add 90° more` : 'Rotate 90° CW (adds to auto-detection)';
+  refreshCollSelect();
 
   const dp = document.getElementById('dp');
   if (!_detailOpen) {
@@ -1208,6 +1614,61 @@ document.getElementById('dp-delete-btn').addEventListener('click', async () => {
   await loadClips();
 });
 
+// ── Detail panel extra actions ─────────────────────────────────────────────────
+document.getElementById('dp-rotate-btn').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  rotateClip(parseInt(id));
+});
+
+document.getElementById('dp-similar-btn').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  findSimilar(parseInt(id));
+});
+
+document.getElementById('dp-used-btn').addEventListener('click', () => {
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  toggleUsed(parseInt(id));
+  const clip = CLIP_MAP[id];
+  document.getElementById('dp-used-btn').textContent = clip?.used_in_edit ? 'Unmark used in edit' : 'Mark as used in edit';
+});
+
+['dp-bin-keep','dp-bin-maybe','dp-bin-cut'].forEach(btnId => {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const id = document.getElementById('dp-save-btn').dataset.id;
+    if (!id) return;
+    const status = btnId === 'dp-bin-keep' ? 'keep' : btnId === 'dp-bin-cut' ? 'cut' : 'maybe';
+    setBin(parseInt(id), status);
+    buildBinFilter(ALL_CLIPS);
+  });
+});
+
+document.getElementById('dp-coll-select').addEventListener('change', async function() {
+  const groupId = parseInt(this.value);
+  if (!groupId) return;
+  const id = document.getElementById('dp-save-btn').dataset.id;
+  if (!id) return;
+  await addToCollection(parseInt(id), groupId);
+  this.value = '';
+});
+
+function refreshCollSelect() {
+  const sel = document.getElementById('dp-coll-select');
+  sel.innerHTML = '<option value="">Add to collection…</option>';
+  for (const g of _GROUPS) {
+    sel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+  }
+}
+
+document.getElementById('coll-add-btn').addEventListener('click', async () => {
+  const name = prompt('Collection name:');
+  if (!name?.trim()) return;
+  await createCollection(name.trim());
+  refreshCollSelect();
+});
+
 // ── Breakdown ──────────────────────────────────────────────────────────────────
 const COLOR_MAP = {
   estab: '#58A6FF', hero: '#C9A74A', pan: '#00D4CE',
@@ -1262,7 +1723,7 @@ function renderBreakdown(segments) {
   }).join('');
 
   const html = `
-    <div class="bk-bar-wrap" id="bk-bar-wrap">
+    <div class="bk-bar-wrap" id="bk-bar-wrap" data-total="${total}">
       <div class="bk-bar" id="bk-bar">${barItems}</div>
       <div class="bk-cursor" id="bk-cursor"></div>
     </div>
@@ -1287,9 +1748,9 @@ function renderBreakdown(segments) {
     cursor.style.display = 'block';
   }
 
-  barWrap.addEventListener('click', e => {
+  function bkSeek(clientX) {
     const rect = bar.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const t = pct * total;
     moveCursorTo(pct);
     const idx = segments.findIndex((s, i) => t >= s.start && (i === segments.length - 1 || t < segments[i + 1].start));
@@ -1298,9 +1759,15 @@ function renderBreakdown(segments) {
     if (!clipId) return;
     if (_pvOpenClipId === clipId) {
       document.getElementById('pv-video').currentTime = t;
-    } else {
+    } else if (!_bkDragging) {
       openPreview(clipId, t);
     }
+  }
+  barWrap._bkSeek = bkSeek;
+  barWrap.addEventListener('mousedown', e => {
+    _bkDragging = true;
+    bkSeek(e.clientX);
+    e.preventDefault();
   });
   list.querySelectorAll('.bk-item').forEach(el => {
     el.addEventListener('click', e => {
@@ -1378,6 +1845,24 @@ const PV_COLOR_MAP = {
 let _pvSegs = [];
 let _pvSpeeds = [1, 1.5, 2, 0.5], _pvSpeedIdx = 0;
 let _pvOpenClipId = null;
+let _bkDragging = false;
+let _pvDragging = false;
+
+function _pvApplyRotation(clip) {
+  const vid = document.getElementById('pv-video');
+  const pvWrap = document.getElementById('pv-video-wrap');
+  const deg = clip.rotation_override || 0;
+  vid.style.transform = deg ? `rotate(${deg}deg)` : '';
+  if (deg === 90 || deg === 270) {
+    const cw = pvWrap.offsetWidth || 640;
+    const ch = pvWrap.offsetHeight || 360;
+    vid.style.maxWidth = ch + 'px';
+    vid.style.maxHeight = cw + 'px';
+  } else {
+    vid.style.maxWidth = '';
+    vid.style.maxHeight = '';
+  }
+}
 
 function _pvTc(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
@@ -1489,17 +1974,43 @@ async function openPreview(clipId, seekTo = 0) {
 
   vid.addEventListener('timeupdate', () => {
     _pvSyncUI(vid.currentTime, vid.duration || 0);
+    const bkWrap = document.getElementById('bk-bar-wrap');
+    const bkCursor = document.getElementById('bk-cursor');
+    if (bkWrap && bkCursor) {
+      const bkTotal = parseFloat(bkWrap.dataset.total || 0);
+      if (bkTotal > 0) {
+        const pct = Math.min(1, Math.max(0, vid.currentTime / bkTotal));
+        bkCursor.style.left = (pct * 100).toFixed(2) + '%';
+        bkCursor.style.display = 'block';
+      }
+    }
   });
   vid.addEventListener('play', () => { document.getElementById('pv-btn-play').textContent = '⏸'; });
   vid.addEventListener('pause', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
   vid.addEventListener('ended', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
 
-  // Click bar to scrub — seek to exact pixel position
+  // Drag to scrub preview bar
   const wrap = document.getElementById('pv-tl-wrap');
-  wrap.onclick = e => {
+  wrap.onmousedown = e => {
+    _pvDragging = true;
     const rect = document.getElementById('pv-tl-bar').getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     vid.currentTime = pct * (vid.duration || 0);
+    e.preventDefault();
+  };
+
+  // Apply rotation delta (rotation_override is extra degrees on top of browser's auto-rotate)
+  _pvApplyRotation(clip);
+
+  // Preview rotate button
+  const pvRotBtn = document.getElementById('pv-rotate-btn');
+  pvRotBtn.style.display = '';
+  pvRotBtn.title = `Rotate 90° CW (currently +${clip.rotation_override || 0}°)`;
+  pvRotBtn.onclick = async () => {
+    await rotateClip(clipId);
+    const updated = CLIP_MAP[clipId];
+    _pvApplyRotation(updated);
+    pvRotBtn.title = `Rotate 90° CW (currently +${updated.rotation_override || 0}°)`;
   };
 
   _pvOpenClipId = clipId;
@@ -1512,6 +2023,11 @@ function closePreview() {
   const vid = document.getElementById('pv-video');
   vid.pause();
   vid.src = '';
+  vid.style.transform = '';
+  vid.style.maxWidth = '';
+  vid.style.maxHeight = '';
+  const pvRotBtn = document.getElementById('pv-rotate-btn');
+  if (pvRotBtn) { pvRotBtn.style.display = 'none'; pvRotBtn.onclick = null; }
   document.getElementById('pv-overlay').classList.remove('open');
   document.getElementById('pv-seg-overlay').classList.remove('show');
   document.body.style.overflow = '';
@@ -1550,6 +2066,40 @@ document.getElementById('pv-btn-speed').addEventListener('click', () => {
   document.getElementById('pv-btn-speed').textContent = _pvSpeeds[_pvSpeedIdx] + '×';
 });
 
+// Global drag handlers for timeline scrubbing
+document.addEventListener('mousemove', e => {
+  if (_bkDragging) {
+    const bkWrap = document.getElementById('bk-bar-wrap');
+    if (bkWrap?._bkSeek) bkWrap._bkSeek(e.clientX);
+  }
+  if (_pvDragging) {
+    const pvBar = document.getElementById('pv-tl-bar');
+    const pvVid = document.getElementById('pv-video');
+    if (pvBar && pvVid) {
+      const rect = pvBar.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      pvVid.currentTime = pct * (pvVid.duration || 0);
+    }
+  }
+});
+document.addEventListener('mouseup', () => {
+  if (_bkDragging) {
+    // fire openPreview on release if not already open
+    const bkWrap = document.getElementById('bk-bar-wrap');
+    const clipId = document.getElementById('dp-save-btn')?.dataset.id;
+    if (bkWrap?._bkSeek && clipId && _pvOpenClipId !== clipId) {
+      const bkTotal = parseFloat(bkWrap.dataset.total || 0);
+      const cursor = document.getElementById('bk-cursor');
+      if (cursor && bkTotal > 0) {
+        const pct = parseFloat(cursor.style.left) / 100;
+        openPreview(clipId, pct * bkTotal);
+      }
+    }
+  }
+  _bkDragging = false;
+  _pvDragging = false;
+});
+
 document.addEventListener('keydown', e => {
   if (!document.getElementById('pv-overlay').classList.contains('open')) return;
   const vid = document.getElementById('pv-video');
@@ -1578,15 +2128,43 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-// Library pill filters
+// Library pill filters (All / Usable / Keep / Cut / Maybe)
 document.querySelectorAll('#v-library .pill-filter').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#v-library .pill-filter').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
-    _currentUsableFilter = btn.dataset.filter;
+    const f = btn.dataset.filter;
+    if (f === 'all' || f === 'usable') {
+      _currentUsableFilter = f;
+      _currentBinFilter = 'all';
+    } else {
+      _currentBinFilter = f;
+      _currentUsableFilter = 'all';
+    }
+    _similarMode = false;
     buildLibrary(ALL_CLIPS);
     buildCatFilter(ALL_CLIPS.filter(c => _currentUsableFilter === 'usable' ? c.is_usable : true));
   });
+});
+
+// Sort dropdown
+document.getElementById('sort-select').addEventListener('change', function() {
+  _currentSort = this.value;
+  buildLibrary(ALL_CLIPS);
+});
+
+// View toggle
+document.getElementById('vtb-grid').addEventListener('click', () => {
+  _viewMode = 'grid';
+  document.getElementById('vtb-grid').classList.add('on');
+  document.getElementById('vtb-timeline').classList.remove('on');
+  buildLibrary(ALL_CLIPS);
+});
+document.getElementById('vtb-timeline').addEventListener('click', () => {
+  _viewMode = 'timeline';
+  document.getElementById('vtb-timeline').classList.add('on');
+  document.getElementById('vtb-grid').classList.remove('on');
+  buildLibrary(ALL_CLIPS);
 });
 
 // ── Scan ───────────────────────────────────────────────────────────────────────
@@ -2192,6 +2770,94 @@ try {
   if (f) document.getElementById('folder-input').value = f;
 } catch(e) {}
 
+// ── Quick review mode ──────────────────────────────────────────────────────────
+let _revClips = [];
+let _revIdx = 0;
+
+function openReview() {
+  _revClips = ALL_CLIPS.filter(c => c.quality_score); // analyzed only
+  if (!_revClips.length) { alert('No analyzed clips to review.'); return; }
+  _revIdx = 0;
+  document.getElementById('review-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderRevCard();
+}
+
+function closeReview() {
+  document.getElementById('review-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderRevCard() {
+  if (!_revClips.length) return;
+  const clip = _revClips[_revIdx];
+  document.getElementById('rev-name').textContent = clip.name;
+  document.getElementById('rev-counter').textContent = `${_revIdx + 1} of ${_revClips.length}`;
+  document.getElementById('rev-progress-fill').style.width = ((_revIdx + 1) / _revClips.length * 100).toFixed(1) + '%';
+  const thumb = document.getElementById('rev-thumb');
+  thumb.innerHTML = '';
+  thumb.appendChild(thumbEl(clip, 840, 472));
+  document.getElementById('rev-tags').innerHTML = `
+    <span class="tag" style="${catTagStyle(clip.category)}">${clip.category}</span>
+    ${clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
+    ${clip.lighting ? `<span class="tag" style="background:rgba(168,171,186,.08);color:var(--text-3)">${clip.lighting}</span>` : ''}
+    <span class="tag" style="background:rgba(168,171,186,.08);color:${qColor(clip.quality_score)}">Q${clip.quality_score}</span>
+    ${clip.bin_status ? `<span class="tag bin-badge ${clip.bin_status}" style="position:static;pointer-events:auto">${clip.bin_status.toUpperCase()}</span>` : ''}
+  `;
+  ['keep','maybe','cut'].forEach(k => {
+    document.getElementById(`rev-${k}`).classList.toggle('active', clip.bin_status === k);
+  });
+}
+
+function revNav(delta) {
+  _revIdx = Math.max(0, Math.min(_revClips.length - 1, _revIdx + delta));
+  renderRevCard();
+}
+
+async function revBin(status) {
+  if (!_revClips.length) return;
+  const clip = _revClips[_revIdx];
+  await setBin(clip.id, status);
+  buildBinFilter(ALL_CLIPS);
+  renderRevCard();
+  setTimeout(() => revNav(1), 300); // auto-advance
+}
+
+document.getElementById('review-btn').addEventListener('click', openReview);
+document.getElementById('rev-close').addEventListener('click', closeReview);
+document.getElementById('rev-prev').addEventListener('click', () => revNav(-1));
+document.getElementById('rev-next').addEventListener('click', () => revNav(1));
+document.getElementById('rev-keep').addEventListener('click', () => revBin('keep'));
+document.getElementById('rev-maybe').addEventListener('click', () => revBin('maybe'));
+document.getElementById('rev-cut').addEventListener('click', () => revBin('cut'));
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('review-overlay').classList.contains('open')) return;
+  if (e.key === 'Escape') { closeReview(); return; }
+  if (e.key === 'ArrowLeft')  { revNav(-1); return; }
+  if (e.key === 'ArrowRight') { revNav(1);  return; }
+  const k = e.key.toLowerCase();
+  if (k === 'k') { revBin('keep');  return; }
+  if (k === 'x') { revBin('cut');   return; }
+  if (k === 'm') { revBin('maybe'); return; }
+  if (k === ' ') {
+    e.preventDefault();
+    const clip = _revClips[_revIdx];
+    if (clip) openPreview(clip.id);
+  }
+}, true);
+
+// K/X/M shortcuts when hovering a card (outside review mode)
+document.addEventListener('keydown', e => {
+  if (document.getElementById('review-overlay').classList.contains('open')) return;
+  if (document.getElementById('pv-overlay').classList.contains('open')) return;
+  if (!_hoveredClipId) return;
+  const k = e.key.toLowerCase();
+  if (k === 'k') setBin(_hoveredClipId, 'keep');
+  else if (k === 'x') setBin(_hoveredClipId, 'cut');
+  else if (k === 'm') setBin(_hoveredClipId, 'maybe');
+});
+
 // Load categories then clips
 (async () => {
   try {
@@ -2206,5 +2872,6 @@ try {
   loadClips();
 })();
 </script>
+
 </body>
 </html>

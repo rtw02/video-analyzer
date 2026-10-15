@@ -6,6 +6,7 @@ import asyncio
 import subprocess
 import threading
 import shutil
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from datetime import datetime
@@ -86,10 +87,32 @@ def _fmt_clip(c: dict) -> dict:
         analysis_tier = None
         debug_scores = {}
 
+    fp = c.get("filepath", "")
+    try:
+        file_date = datetime.fromtimestamp(os.path.getmtime(fp)).strftime("%Y-%m-%d") if fp and Path(fp).exists() else ""
+    except Exception:
+        file_date = ""
+
+    # Rotation: rotation_override is a delta (0/90/180/270) added to auto-detected orientation.
+    # is_portrait is derived from the effective rotation.
+    rotation_override = c.get("rotation_override")
+    try:
+        pw, ph = (int(x) for x in res.split("x"))
+        auto_portrait = ph > pw
+    except Exception:
+        auto_portrait = False
+    if rotation_override is not None:
+        delta = rotation_override % 360
+        auto_rot_deg = 90 if auto_portrait else 0
+        effective_rot = (auto_rot_deg + delta) % 360
+        is_portrait = effective_rot in (90, 270)
+    else:
+        is_portrait = auto_portrait
+
     return {
         "id": c["id"],
         "name": c["filename"],
-        "filepath": c.get("filepath", ""),
+        "filepath": fp,
         "md5": c.get("md5_hash", ""),
         "duration_str": f"{mins}:{secs:02d}",
         "duration_seconds": dur,
@@ -109,6 +132,11 @@ def _fmt_clip(c: dict) -> dict:
         "debug_scores": debug_scores,
         "has_segments": bool(c.get("segments_at")),
         "segment_types": list({s["type"] for s in (json.loads(c["segments"]) if c.get("segments") else [])}),
+        "bin_status": c.get("bin_status") or None,
+        "used_in_edit": bool(c.get("used_in_edit", 0)),
+        "file_date": file_date,
+        "is_portrait": is_portrait,
+        "rotation_override": rotation_override,
     }
 
 
@@ -140,6 +168,8 @@ class ManualUpdate(BaseModel):
     lighting: str | None = None
     is_usable: bool | None = None
     notes: str | None = None
+    bin_status: str | None = None
+    used_in_edit: bool | None = None
 
 
 @app.patch("/api/clips/{clip_id}")
@@ -147,10 +177,68 @@ async def update_clip_manual(clip_id: int, body: ManualUpdate):
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     if "is_usable" in fields:
         fields["is_usable"] = int(fields["is_usable"])
+    if "used_in_edit" in fields:
+        fields["used_in_edit"] = int(fields["used_in_edit"])
     if fields:
         fields["analyzed_at"] = datetime.now().isoformat()
         cache.update_clip_manual(clip_id, fields)
     return {"ok": True}
+
+
+class FlagUpdate(BaseModel):
+    bin_status: str | None = None  # keep | cut | maybe | null (clears)
+    used_in_edit: bool | None = None
+
+
+@app.patch("/api/clips/{clip_id}/flag")
+async def flag_clip(clip_id: int, body: FlagUpdate):
+    fields = {}
+    if body.bin_status is not None:
+        fields["bin_status"] = body.bin_status if body.bin_status in ("keep", "cut", "maybe") else None
+    if body.used_in_edit is not None:
+        fields["used_in_edit"] = int(body.used_in_edit)
+    if fields:
+        cache.update_clip_manual(clip_id, fields)
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    return {"ok": True, "clip": _fmt_clip(dict(row))}
+
+
+@app.patch("/api/clips/{clip_id}/rotate")
+async def rotate_clip(clip_id: int):
+    """Add 90° CW to rotation_override and regenerate thumbnail."""
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    clip = dict(row)
+    fp = clip.get("filepath", "")
+    md5 = clip.get("md5_hash", "")
+
+    current = clip.get("rotation_override") or 0
+    new_override = (current + 90) % 360
+    # 0° override = same as auto; store NULL to clear override when back to 0
+    store_val = new_override if new_override != 0 else None
+    cache.update_clip_manual(clip_id, {"rotation_override": store_val})
+
+    if fp and Path(fp).exists() and md5:
+        from analyzer import extractor
+        extractor.extract_thumbnail(fp, Path("data/thumbs"), md5, rotation_override=new_override)
+
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    return {"ok": True, "clip": _fmt_clip(dict(row))}
+
+
+@app.get("/api/clips/similar/{clip_id}")
+async def similar_clips(clip_id: int):
+    clips = cache.get_similar_clips(clip_id)
+    return {"clips": [_fmt_clip(c) for c in clips]}
 
 
 @app.get("/api/clips/{clip_id}/thumb")

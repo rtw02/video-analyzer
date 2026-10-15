@@ -28,12 +28,11 @@ def find_videos(folder: str) -> list[Path]:
 
 
 @functools.lru_cache(maxsize=512)
-def get_display_orientation(video_path: str) -> tuple[int, int, bool]:
+def _probe_orientation(video_path: str) -> tuple[int, int, int]:
     """
-    Returns (display_width, display_height, is_portrait).
-    Uses ffprobe to read the rotation tag that cv2 ignores (common on iPhone footage).
-    Result cached by path — called up to 3× per clip during scan, now only once.
-    Falls back to raw dims on failure.
+    Returns (display_width, display_height, rotate_degrees).
+    Reads rotation tag + Display Matrix side data that cv2 ignores.
+    Cached by path.
     """
     cmd = [
         _ffprobe(), "-v", "quiet", "-print_format", "json",
@@ -51,9 +50,41 @@ def get_display_orientation(video_path: str) -> tuple[int, int, bool]:
                 rotate = int(sd.get("rotation", rotate))
         if abs(rotate) in (90, 270):
             w, h = h, w
-        return w, h, h > w
+        return w, h, rotate
     except Exception:
-        return 0, 0, False
+        return 0, 0, 0
+
+
+def get_display_orientation(video_path: str) -> tuple[int, int, bool]:
+    """Returns (display_width, display_height, is_portrait)."""
+    w, h, _ = _probe_orientation(video_path)
+    return w, h, h > w
+
+
+def get_rotation_degrees(video_path: str) -> int:
+    """Returns the raw rotation tag in degrees (0, 90, 180, 270, -90, -270)."""
+    _, _, rot = _probe_orientation(video_path)
+    return rot
+
+
+def _rotation_vf(rotate: int, height: int = 512) -> tuple[list[str], str]:
+    """
+    Returns (extra_ffmpeg_flags, vf_filter) for explicit rotation.
+    Uses -noautorotate so we control orientation deterministically.
+    """
+    rot = rotate % 360
+    is_portrait = rot in (90, 270)
+    scale = f"scale=-2:{height}" if is_portrait else f"scale={height}:-2"
+    flags = ["-noautorotate"]
+    if rot == 90:
+        vf = f"transpose=1,{scale}"
+    elif rot == 270:
+        vf = f"transpose=2,{scale}"
+    elif rot == 180:
+        vf = f"hflip,vflip,{scale}"
+    else:
+        vf = scale
+    return flags, vf
 
 
 def get_video_metadata(video_path: str) -> dict:
@@ -104,8 +135,8 @@ def extract_frames(video_path: str, max_frames: int = 3,
     meta = get_video_metadata(video_path)
     duration = meta.get("duration_seconds", 0) or 10
 
-    _, _, is_portrait = get_display_orientation(video_path)
-    vf_scale = "scale=-2:512" if is_portrait else "scale=512:-2"
+    rotate = get_rotation_degrees(video_path)
+    rot_flags, vf_scale = _rotation_vf(rotate, height=512)
 
     start = duration * 0.05
     end = duration * 0.95
@@ -122,7 +153,7 @@ def extract_frames(video_path: str, max_frames: int = 3,
     for i, ts in enumerate(timestamps):
         out = frame_dir / f"f{i:02d}.jpg"
         cmd = [
-            _ffmpeg(), "-y", "-ss", str(ts), "-i", str(video_path),
+            _ffmpeg(), *rot_flags, "-y", "-ss", str(ts), "-i", str(video_path),
             "-frames:v", "1", "-q:v", "3",
             "-vf", vf_scale,
             str(out)
@@ -134,21 +165,32 @@ def extract_frames(video_path: str, max_frames: int = 3,
     return frame_paths
 
 
-def extract_thumbnail(video_path: str, out_dir: Path, md5: str) -> Path | None:
+def extract_thumbnail(video_path: str, out_dir: Path, md5: str,
+                      rotation_override: int | None = None) -> Path | None:
+    """
+    Extract a thumbnail for the clip. rotation_override is a delta in degrees
+    (0/90/180/270) added on top of the auto-detected rotation from metadata.
+    Pass None (default) to use auto-detection only; the result is cached.
+    Passing a value forces re-extraction (deletes the cached thumbnail first).
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"{md5}.jpg"
-    if out.exists():
+    if out.exists() and rotation_override is None:
         return out
 
     meta = get_video_metadata(video_path)
     duration = meta.get("duration_seconds", 0)
     ts = max(duration * 0.1, 0.5)
 
-    _, _, is_portrait = get_display_orientation(video_path)
-    vf_scale = "scale=-2:320" if is_portrait else "scale=320:-1"
+    auto_rotate = get_rotation_degrees(video_path)
+    delta = rotation_override if rotation_override is not None else 0
+    effective_rotate = (auto_rotate + delta) % 360
 
+    rot_flags, vf_scale = _rotation_vf(effective_rotate, height=320)
+
+    out.unlink(missing_ok=True)
     cmd = [
-        _ffmpeg(), "-y", "-ss", str(ts), "-i", str(video_path),
+        _ffmpeg(), *rot_flags, "-y", "-ss", str(ts), "-i", str(video_path),
         "-frames:v", "1", "-q:v", "4",
         "-vf", vf_scale,
         str(out)
