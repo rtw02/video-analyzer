@@ -16,3 +16,10 @@ data/thumbs/
 # Editor
 .vscode/
 .idea/
+
+# Claude agents
+.agents/
+.codex/
+skills-lock.json
+
+.env
