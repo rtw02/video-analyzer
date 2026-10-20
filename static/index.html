@@ -460,6 +460,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
       <div class="nav-item" data-view="trends">
         <span class="nav-icon">↗</span> Trends <span class="nav-count" id="nc-trends">0</span>
       </div>
+      <div class="nav-item" data-view="grade">
+        <span class="nav-icon">◑</span> Grade
+      </div>
     </nav>
     <div class="rail-sep"></div>
     <div class="rail-sect" id="cat-filter-list"></div>
@@ -566,6 +569,47 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilog
           <button class="tb-btn primary" id="trends-search-btn">Search</button>
         </div>
         <div class="trends-grid" id="trends-content"></div>
+      </div>
+    </div>
+
+    <div id="v-grade" class="view">
+      <div class="view-bar">
+        <span class="view-title">Color Grade</span>
+        <label class="pill-filter" style="margin-left:auto;cursor:pointer">
+          + Upload .drx / .cube
+          <input type="file" id="grade-upload-input" accept=".drx,.cube" style="display:none">
+        </label>
+      </div>
+      <div class="scroll" style="padding:20px">
+        <div style="display:flex;gap:20px;align-items:flex-start">
+          <!-- Grade list -->
+          <div style="width:200px;flex-shrink:0">
+            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Grades</div>
+            <div id="grade-list" style="display:flex;flex-direction:column;gap:4px"></div>
+            <div id="grade-empty" style="font-size:11px;color:var(--text-3);padding:8px 0">No grades yet — upload a .drx or .cube file</div>
+          </div>
+          <!-- Preview area -->
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Preview</div>
+            <div id="grade-clip-hint" style="font-size:11px;color:var(--text-3);padding:8px 0">Select a grade and click a clip in the library to preview</div>
+            <div id="grade-preview-wrap" style="display:none">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:8px" id="grade-preview-label"></div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">Original</div>
+                  <img id="grade-orig-img" style="max-width:360px;width:100%;border-radius:4px;border:1px solid var(--border)">
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-3);margin-bottom:4px" id="grade-graded-label">Graded</div>
+                  <div id="grade-graded-wrap" style="position:relative;display:inline-block">
+                    <img id="grade-graded-img" style="max-width:360px;width:100%;border-radius:4px;border:1px solid var(--border)">
+                    <div id="grade-loading" style="display:none;position:absolute;inset:0;background:rgba(12,13,16,.6);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3)">Applying grade…</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -2125,6 +2169,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     closeDetail();
     if (view === 'proposals') loadProposals();
     if (view === 'trends') loadTrends();
+    if (view === 'grade') loadGrades();
   });
 });
 
@@ -2871,6 +2916,105 @@ document.addEventListener('keydown', e => {
   }
   loadClips();
 })();
+
+// ── Color Grade ───────────────────────────────────────────────────────────────
+let _activeGrade = null;
+let _gradePreviewClipId = null;
+
+async function loadGrades() {
+  const res = await fetch('/api/grades');
+  if (!res.ok) return;
+  const { grades } = await res.json();
+  renderGradeList(grades);
+}
+
+function renderGradeList(grades) {
+  const list = document.getElementById('grade-list');
+  const empty = document.getElementById('grade-empty');
+  list.innerHTML = '';
+  empty.style.display = grades.length ? 'none' : '';
+  grades.forEach(g => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;border:1px solid transparent;font-size:12px;transition:background .1s,border-color .1s';
+    row.dataset.name = g.name;
+    if (_activeGrade === g.name) row.style.borderColor = 'var(--accent)';
+    row.innerHTML = `
+      <span style="font-size:10px;color:var(--text-3);font-variant:small-caps">${g.type}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.name}</span>
+      <span class="grade-del" data-name="${g.name}" style="color:var(--text-3);font-size:10px;cursor:pointer;flex-shrink:0" title="Delete">✕</span>`;
+    row.addEventListener('click', e => {
+      if (e.target.classList.contains('grade-del')) return;
+      _activeGrade = g.name;
+      renderGradeList(grades);
+      if (_gradePreviewClipId) applyGradePreview(_gradePreviewClipId);
+      else {
+        document.getElementById('grade-clip-hint').style.display = '';
+        document.getElementById('grade-clip-hint').textContent = 'Now click any clip in the library to preview this grade';
+      }
+    });
+    row.querySelector('.grade-del').addEventListener('click', async () => {
+      await fetch(`/api/grades/${encodeURIComponent(g.name)}`, { method: 'DELETE' });
+      if (_activeGrade === g.name) { _activeGrade = null; _gradePreviewClipId = null; hideGradePreview(); }
+      loadGrades();
+    });
+    list.appendChild(row);
+  });
+}
+
+function hideGradePreview() {
+  document.getElementById('grade-preview-wrap').style.display = 'none';
+  document.getElementById('grade-clip-hint').style.display = '';
+}
+
+async function applyGradePreview(clipId) {
+  if (!_activeGrade) return;
+  _gradePreviewClipId = clipId;
+  const clip = CLIP_MAP[clipId];
+  if (!clip) return;
+
+  document.getElementById('grade-clip-hint').style.display = 'none';
+  document.getElementById('grade-preview-wrap').style.display = '';
+  document.getElementById('grade-preview-label').textContent = clip.filename || clip.name || '';
+  document.getElementById('grade-graded-label').textContent = _activeGrade;
+
+  // Original thumb (cache-busted not needed here)
+  const origImg = document.getElementById('grade-orig-img');
+  origImg.src = `/api/clips/${clipId}/thumb?t=${Date.now()}`;
+
+  // Graded
+  const gradedImg = document.getElementById('grade-graded-img');
+  const loadingEl = document.getElementById('grade-loading');
+  gradedImg.style.opacity = '0.4';
+  loadingEl.style.display = 'flex';
+  gradedImg.src = `/api/clips/${clipId}/grade-preview?grade=${encodeURIComponent(_activeGrade)}&t=${Date.now()}`;
+  gradedImg.onload = () => { gradedImg.style.opacity = '1'; loadingEl.style.display = 'none'; };
+  gradedImg.onerror = () => { gradedImg.style.opacity = '1'; loadingEl.style.display = 'none'; };
+}
+
+// Upload handler
+document.getElementById('grade-upload-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/api/grades/upload', { method: 'POST', body: fd });
+  e.target.value = '';
+  if (res.ok) {
+    const data = await res.json();
+    _activeGrade = data.name;
+    loadGrades();
+  }
+});
+
+// When in grade view, clicking a clip card previews it
+document.addEventListener('click', e => {
+  const nav = document.querySelector('.nav-item.on');
+  if (!nav || nav.dataset.view !== 'grade') return;
+  if (!_activeGrade) return;
+  const card = e.target.closest('.frame[data-id]');
+  if (!card) return;
+  applyGradePreview(parseInt(card.dataset.id));
+});
 </script>
 
 </body>

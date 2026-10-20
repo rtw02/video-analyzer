@@ -993,6 +993,77 @@ async def analyze_group(group_id: int):
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+# ── Color Grades ──────────────────────────────────────────────────────────────
+
+from analyzer import grader as grader_module
+
+@app.get("/api/grades")
+async def list_grades():
+    return {"grades": grader_module.list_grades()}
+
+
+@app.post("/api/grades/upload")
+async def upload_grade(file: UploadFile = File(...)):
+    ext = Path(file.filename).suffix.lower()
+    if ext not in (".drx", ".cube"):
+        raise HTTPException(400, "Only .drx and .cube files supported")
+    grader_module.GRADES_DIR.mkdir(parents=True, exist_ok=True)
+    dest = grader_module.GRADES_DIR / file.filename
+    content = await file.read()
+    dest.write_bytes(content)
+    # Pre-warm cube cache for drx
+    if ext == ".drx":
+        try:
+            grader_module.drx_to_cube_path(dest)
+        except Exception:
+            pass
+    return {"ok": True, "name": file.filename, "type": ext.lstrip(".")}
+
+
+@app.delete("/api/grades/{grade_name}")
+async def delete_grade(grade_name: str):
+    path = grader_module.GRADES_DIR / grade_name
+    if not path.exists():
+        raise HTTPException(404)
+    path.unlink()
+    # Remove cached cube if drx
+    cube = grader_module.CUBE_CACHE_DIR / (path.stem + ".cube")
+    if cube.exists():
+        cube.unlink()
+    return {"ok": True}
+
+
+@app.get("/api/clips/{clip_id}/grade-preview")
+async def grade_preview(clip_id: int, grade: str, t: float = None):
+    conn = cache.get_connection()
+    row = conn.execute("SELECT * FROM clips WHERE id=?", (clip_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404)
+    clip = dict(row)
+    fp = clip.get("filepath", "")
+    if not fp or not Path(fp).exists():
+        raise HTTPException(404, "File not found")
+
+    cube_path = grader_module.get_cube_for_grade(grade)
+    if not cube_path:
+        raise HTTPException(404, "Grade not found")
+
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        out = Path(tmp.name)
+
+    loop = asyncio.get_event_loop()
+    ok = await loop.run_in_executor(
+        None, lambda: grader_module.apply_grade_to_frame(fp, cube_path, out, t)
+    )
+    if not ok:
+        raise HTTPException(500, "Failed to apply grade")
+
+    return FileResponse(out, media_type="image/jpeg",
+                        headers={"Cache-Control": "no-cache"})
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="127.0.0.1", port=7842, reload=True)
