@@ -44,6 +44,10 @@ if _clip_available():
 async def index():
     return FileResponse("static/index.html")
 
+@app.get("/dashboard")
+async def dashboard():
+    return FileResponse("static/dashboard.html")
+
 
 # ── Clips ──────────────────────────────────────────────────────────────────────
 

@@ -1,3021 +1,448 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Footage</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Epilogue:wght@300;400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Epilogue:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <style>
 :root {
-  --bg:        #0C0D10;
-  --bg-alt:    #101115;
-  --surface:   #14151B;
-  --surface-2: #1D1F28;
-  --surface-3: #272A36;
-  --border:    #22242E;
-  --border-soft:#191B23;
-  --accent:    #C9A74A;
-  --accent-lo: rgba(201,167,74,.12);
-  --accent-lo2:rgba(201,167,74,.06);
-  --text:      #E8E5DF;
-  --text-2:    #A8ABBA;
-  --text-3:    #5C606E;
-  --good:      #5DBB8A;
-  --warn:      #D98C3E;
-  --bad:       #CC4E4E;
-  --tt:  #00D4CE;
-  --ig:  #C264B8;
-  --yt:  #E03333;
+  --bg:       #0C0D10;
+  --bg-alt:   #111318;
+  --panel:    #161820;
+  --panel-2:  #1D1F28;
+  --surface:  #252830;
+  --border:   rgba(168,171,186,.14);
+  --border-s: rgba(168,171,186,.08);
+  --border-m: rgba(201,167,74,.28);
+  --text:     #E8E9EE;
+  --text-2:   #A8ABBA;
+  --text-3:   #5C6070;
+  --teal:     #C9A74A;
+  --teal-b:   #D4B96A;
+  --amber:    #D4895A;
+  --violet:   #A78BFA;
+  --red:      #D45A5A;
+  --glow:     0 0 0 1px rgba(201,167,74,.3), 0 0 24px rgba(201,167,74,.15);
+  --card-shadow: 0 1px 0 rgba(255,255,255,.025) inset, 0 12px 32px -18px rgba(0,0,0,.7);
+  color-scheme: dark;
 }
-:root[data-theme="light"] {
-  --bg:#F2F0EC;--bg-alt:#E8E5DF;--surface:#FAFAF8;--surface-2:#EDEBE6;
-  --surface-3:#E2DFD9;--border:#D8D5CE;--border-soft:#E4E1DA;
-  --accent:#9A7B28;--accent-lo:rgba(154,123,40,.1);--accent-lo2:rgba(154,123,40,.05);
-  --text:#16161A;--text-2:#5A5D68;--text-3:#A8AABA;
-  --good:#2A9E66;--warn:#B8671C;--bad:#B03030;
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#F4F2EE; --bg-alt:#ECEAE5; --panel:#FFFFFF; --panel-2:#F0EEE9; --surface:#E4E2DC;
+    --border:rgba(30,28,24,.12); --border-s:rgba(30,28,24,.07); --border-m:rgba(184,146,30,.28);
+    --text:#1A1916; --text-2:#5A5750; --text-3:#9A9890;
+    --teal:#B8921E; --teal-b:#C9A74A; --amber:#B87040; --violet:#7C3AED; --red:#DC2626;
+    color-scheme: light;
+  }
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Epilogue',system-ui,sans-serif;font-size:13px;line-height:1.5;overflow:hidden}
+:root[data-theme="dark"]{color-scheme:dark}
 
-.shell{display:grid;grid-template-columns:176px 1fr;grid-template-rows:52px 1fr;height:100%}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { background: var(--bg); color: var(--text); font-family: 'Epilogue', system-ui, sans-serif; }
+body { min-height: 100vh; overflow-x: hidden; }
 
-/* Rail */
-.rail{grid-row:1/-1;background:var(--bg-alt);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0 0 12px;overflow:hidden}
-.wordmark{height:52px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--border-soft);flex-shrink:0}
-.wordmark-text{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:500;letter-spacing:.01em;color:var(--text)}
-.wordmark-text em{font-style:italic;color:var(--accent)}
-.rail-nav{padding:16px 10px 0;flex-shrink:0}
-.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:4px;cursor:pointer;color:var(--text-2);font-size:12.5px;font-weight:400;transition:color .12s,background .12s;user-select:none}
-.nav-item:hover{color:var(--text);background:var(--surface-2)}
-.nav-item.on{color:var(--text);background:var(--surface-2)}
-.nav-item.on .nav-icon{color:var(--accent)}
-.nav-icon{font-size:13px;width:16px;flex-shrink:0;text-align:center}
-.nav-count{margin-left:auto;font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums}
-.rail-sep{height:1px;background:var(--border-soft);margin:14px 14px}
-.rail-sect{padding:0 10px;flex:1;overflow-y:auto}
-.cat-row{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--text-2);transition:all .1s}
-.cat-row:hover{color:var(--text);background:var(--surface-2)}
-.cat-row.on{color:var(--text);background:var(--surface-2)}
-.cat-pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.cat-n{margin-left:auto;font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums}
-.quality-summary{margin:12px 10px 0;padding:11px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface)}
-.qs-head{font-size:10px;color:var(--text-3);margin-bottom:8px}
-.qs-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
-.qs-label{font-size:10px;width:32px;text-align:right}
-.qs-track{flex:1;height:3px;background:var(--surface-3);border-radius:1px;overflow:hidden}
-.qs-fill{height:100%}
-.qs-n{font-size:10px;color:var(--text-3);width:16px;font-variant-numeric:tabular-nums}
+#grain { position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: .016; mix-blend-mode: screen; }
 
-/* Drag-drop overlay */
-.drop-overlay{position:fixed;inset:0;background:rgba(12,13,16,.88);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none}
-.drop-overlay.active{display:flex}
-.drop-ring{width:160px;height:160px;border:2px dashed rgba(201,167,74,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
-.drop-icon{font-size:36px;opacity:.7}
-.drop-label{font-size:13px;color:var(--text-2);font-family:'Epilogue',sans-serif;font-weight:500}
-.drop-sub{font-size:11px;color:var(--text-3);font-family:'Epilogue',sans-serif}
-/* Hidden file input */
-#file-input{display:none}
-/* Topbar */
-.topbar{background:var(--bg-alt);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 20px;position:relative}
-.folder-pill{display:flex;align-items:center;gap:8px;flex:1;max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:12px;color:var(--text-2)}
-.folder-input{flex:1;background:transparent;border:none;outline:none;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.folder-input::placeholder{color:var(--text-3)}
-.folder-icon{color:var(--text-3);font-size:12px;flex-shrink:0}
-.tb-btn{padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .1s;white-space:nowrap}
-.tb-btn:hover{background:var(--surface-2);color:var(--text)}
-.tb-btn.primary{background:var(--accent);border-color:var(--accent);color:#0C0D10}
-.tb-btn.primary:hover{filter:brightness(1.08)}
-.tb-btn:disabled{opacity:.5;cursor:not-allowed}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.status-tag{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);padding:4px 10px;border:1px solid var(--border);border-radius:4px}
-.pulse{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 5px var(--good);flex-shrink:0}
-.icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;color:var(--text-3);font-size:13px;transition:all .1s}
-.icon-btn:hover{color:var(--text);background:var(--surface-2)}
-.scan-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);display:none}
-.scan-bar.active{display:block}
-.scan-fill{height:100%;background:var(--accent);width:0%;border-radius:0 1px 1px 0}
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(6,10,13,.9); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 52px;
+}
+.nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; letter-spacing: .04em; font-style: italic; }
+.nav-logo span { color: var(--teal-b) }
+.nav-links { display: flex; gap: 24px }
+.nav-link { font-size: 13px; color: var(--text-2); cursor: pointer; transition: color .15s }
+.nav-link:hover { color: var(--text) }
+.nav-cta {
+  display: flex; align-items: center; gap: 7px; padding: 7px 15px; border-radius: 6px;
+  background: var(--teal); color: #0C0D10; font-size: 12px; font-weight: 600;
+  border: none; cursor: pointer; transition: background .15s, box-shadow .15s; font-family:'Epilogue',sans-serif;
+}
+.nav-cta:hover { background: var(--teal-b); box-shadow: 0 0 16px rgba(201,167,74,.3) }
 
-/* Main */
-.main{display:flex;flex-direction:column;overflow:hidden}
-.view-bar{display:flex;align-items:center;gap:6px;padding:8px 20px;border-bottom:1px solid var(--border-soft);flex-shrink:0}
-.view-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;letter-spacing:.01em;color:var(--text);margin-right:6px}
-.pill-filter{padding:3px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-3);cursor:pointer;background:transparent;transition:all .1s}
-.pill-filter:hover{color:var(--text-2);border-color:var(--surface-3)}
-.pill-filter.on{background:var(--accent-lo);border-color:rgba(201,167,74,.3);color:var(--accent)}
-.sort-ctrl{margin-left:auto;font-size:11px;color:var(--text-3);cursor:pointer;display:flex;align-items:center;gap:4px}
-.scroll{flex:1;overflow-y:auto;padding:16px 20px 24px}
-.view{display:none;flex-direction:column;flex:1;overflow:hidden}
-.view.on{display:flex}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px }
 
-/* Library grid */
-.cat-section{margin-bottom:28px}
-.cat-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;font-weight:400;color:var(--text);letter-spacing:.01em;margin-bottom:12px;display:flex;align-items:baseline;gap:12px}
-.cat-title-line{flex:1;height:1px;background:var(--border-soft);position:relative;top:-3px}
-.cat-n-label{font-family:'Epilogue',sans-serif;font-size:10px;font-style:normal;color:var(--text-3)}
-.clip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px}
+/* Hero */
+.hero { padding: 76px 0 68px; display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: start; }
+@media (max-width:760px) { .hero { grid-template-columns:1fr; padding:48px 0 40px } }
 
-/* Film frame */
-.frame{background:var(--surface);border:1px solid var(--border-soft);cursor:pointer;position:relative;overflow:hidden}
-.frame::before{content:'';display:block;height:3px;width:100%;position:absolute;top:0;left:0;z-index:2}
-.frame.q-hi::before{background:var(--good)}
-.frame.q-mid::before{background:var(--warn)}
-.frame.q-lo::before{background:var(--bad)}
-.frame.unreviewed::before{background:var(--surface-3)}
-.frame.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.frame.unusable{opacity:.5}
-.frame-analyze-btn{position:absolute;bottom:6px;left:6px;z-index:3;font-size:9px;padding:2px 7px;background:rgba(201,167,74,.18);border:1px solid rgba(201,167,74,.35);border-radius:2px;color:var(--accent);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:500;display:none;transition:background .1s}
-.frame:hover .frame-analyze-btn{display:block}
-.frame-analyze-btn:hover{background:rgba(201,167,74,.3)}
-.frame-thumb{width:100%;aspect-ratio:16/9;background:var(--surface-2);display:block;overflow:hidden;position:relative}
-.frame-thumb img,.frame-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
-.frame-thumb.portrait img,.frame-thumb.portrait canvas{object-fit:contain;background:#000}
-.frame-dur{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.9);padding:1px 4px;border-radius:2px;font-variant-numeric:tabular-nums;z-index:1}
-.frame-meta{padding:6px 8px 7px}
-.frame-name{font-size:11px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);margin-bottom:3px}
-.frame-tags{display:flex;gap:3px;flex-wrap:wrap}
-.tag{font-size:9px;padding:1px 5px;border-radius:2px;font-weight:500}
+.hero-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(201,167,74,.25); border-radius: 20px;
+  padding: 4px 12px 4px 8px; font-size: 11px; color: var(--teal-b); margin-bottom: 22px;
+}
+.pulse-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--teal); animation: pd 2s ease-in-out infinite }
+@keyframes pd { 0%,100%{opacity:.4}50%{opacity:1} }
 
-/* Empty state */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-3)}
-.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--text-2)}
-.empty-sub{font-size:12px;text-align:center;line-height:1.6;max-width:280px}
+.hero-h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(40px, 6vw, 64px); line-height: 1.04; font-weight: 400;
+  color: var(--text); margin-bottom: 18px;
+}
+.hero-h1 em { font-style: normal; color: var(--teal-b) }
+.hero-sub { font-size: 15px; color: var(--text-2); line-height: 1.7; max-width: 400px; margin-bottom: 32px; font-weight: 300; }
+.hero-btns { display: flex; gap: 10px; flex-wrap: wrap }
+.btn-primary {
+  padding: 10px 20px; border-radius: 6px; background: var(--teal); color: #0C0D10;
+  font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+  transition: background .15s, box-shadow .15s; font-family:'Epilogue',sans-serif;
+}
+.btn-primary:hover { background: var(--teal-b); box-shadow: var(--glow) }
+.btn-secondary {
+  padding: 10px 20px; border-radius: 6px; background: transparent; color: var(--text-2);
+  font-size: 13px; font-weight: 500; border: 1px solid rgba(168,171,186,.2); cursor: pointer;
+  transition: color .15s, border-color .15s; font-family:'Epilogue',sans-serif;
+}
+.btn-secondary:hover { color: var(--text); border-color: rgba(34,211,187,.35) }
 
-/* Detail panel — no CSS transform transition, GSAP handles it */
-.detail-panel{position:fixed;top:52px;right:0;bottom:0;width:280px;background:var(--bg-alt);border-left:1px solid var(--border);transform:translateX(100%);display:flex;flex-direction:column;z-index:50;will-change:transform}
-.dp-head{padding:14px 16px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:flex-start;gap:10px}
-.dp-thumb-wrap{width:88px;aspect-ratio:16/9;background:var(--surface-2);border-radius:2px;overflow:hidden;flex-shrink:0}
-.dp-thumb-wrap img,.dp-thumb-wrap canvas{width:100%;height:100%;display:block;object-fit:cover}
-.dp-thumb-wrap.portrait img,.dp-thumb-wrap.portrait canvas{object-fit:contain;background:#000}
-.dp-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px}
-.dp-sub{font-size:10px;color:var(--text-3);margin-bottom:6px}
-.dp-qs{display:flex;align-items:center;gap:5px;font-size:10px}
-.dp-qs-bar{flex:1;height:3px;background:var(--surface-3);border-radius:1px;overflow:hidden}
-.dp-qs-fill{height:100%}
-.dp-close{margin-left:auto;cursor:pointer;color:var(--text-3);font-size:16px;line-height:1;flex-shrink:0;margin-top:-2px}
-.dp-close:hover{color:var(--text-2)}
-.dp-body{padding:14px 16px;flex:1;overflow-y:auto}
-.dp-row{display:flex;gap:4px;margin-bottom:4px;font-size:11px}
-.dp-lbl{color:var(--text-3);width:56px;flex-shrink:0}
-.dp-val{color:var(--text-2)}
-.dp-note{margin-top:10px;padding:9px 10px;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;font-size:11px;color:var(--text-2);line-height:1.5;font-style:italic}
-.dp-actions{margin-top:12px;display:flex;flex-direction:column;gap:6px}
-.dp-action{width:100%;padding:7px;background:var(--accent-lo);border:1px solid rgba(201,167,74,.25);border-radius:4px;color:var(--accent);font-family:'Epilogue',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:background .1s}
-.dp-action:hover{background:rgba(201,167,74,.2)}
-.dp-action.danger{background:rgba(204,78,78,.08);border-color:rgba(204,78,78,.2);color:var(--bad)}
-.dp-action.danger:hover{background:rgba(204,78,78,.15)}
-.dp-action:disabled{opacity:.5;cursor:not-allowed}
-/* Editable fields */
-.dp-section{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-soft)}
-.dp-field{margin-bottom:8px}
-.dp-field-label{font-size:10px;color:var(--text-3);margin-bottom:3px}
-.dp-select,.dp-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:11px;outline:none}
-.dp-select:focus,.dp-input:focus{border-color:rgba(201,167,74,.4)}
-.dp-select option{background:var(--surface)}
-.dp-usable-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-2)}
-.dp-toggle{width:28px;height:16px;background:var(--surface-3);border-radius:8px;position:relative;cursor:pointer;border:none;flex-shrink:0;transition:background .15s}
-.dp-toggle.on{background:var(--good)}
-.dp-toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .15s}
-.dp-toggle.on::after{transform:translateX(12px)}
-.dp-unreviewed-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-3);padding:3px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
-.dp-unreviewed-badge span{width:6px;height:6px;border-radius:50%;background:var(--surface-3);flex-shrink:0}
+/* App window mock */
+.app-win {
+  background: var(--panel); border: 1px solid var(--border-m);
+  border-radius: 10px; overflow: hidden;
+  box-shadow: var(--card-shadow), 0 0 0 1px rgba(20,184,166,.08);
+}
+.win-bar {
+  background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  padding: 9px 14px; display: flex; align-items: center; gap: 6px;
+}
+.wd { width: 9px; height: 9px; border-radius: 50% }
+.win-title { font-family:'Space Mono',monospace; font-size: 10px; color: var(--text-3); margin-left: 8px }
+.win-tabs {
+  background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  padding: 0 12px; display: flex;
+}
+.win-tab { padding: 8px 13px; font-size: 11px; color: var(--text-3); border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500 }
+.win-tab.active { color: var(--teal-b); border-bottom-color: var(--teal-b) }
+.win-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; padding: 8px }
+.win-card { background: var(--panel-2); border: 1px solid var(--border-s); border-radius: 4px; overflow: hidden; cursor: pointer; transition: border-color .2s }
+.win-card:hover { border-color: var(--border-m) }
+.win-thumb { aspect-ratio:16/9; position:relative; display:flex; align-items:center; justify-content:center; font-size:16px; overflow:hidden }
+.win-q { position:absolute; top:0; left:0; right:0; height:2px }
+.win-dur { position:absolute; bottom:3px; right:4px; font-family:'Space Mono',monospace; font-size:8px; background:rgba(0,0,0,.6); color:rgba(255,255,255,.75); padding:1px 4px; border-radius:2px }
+.win-meta { padding:5px 7px 6px }
+.win-name { font-size:9px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.win-tags { display:flex; gap:2px; margin-top:2px }
+.win-tag { font-size:8px; padding:1px 4px; border-radius:2px; border:1px solid var(--border-s); color:var(--text-3) }
 
-/* Proposals */
-.proposals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
-.prop-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;padding:14px 16px;overflow:hidden}
-.prop-card:hover{border-color:var(--surface-3)}
-.prop-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
-.plat-badge{font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 6px;border-radius:2px;white-space:nowrap;margin-top:2px}
-.plat-tt{background:rgba(0,212,206,.1);color:var(--tt)}
-.plat-ig{background:rgba(194,100,184,.1);color:var(--ig)}
-.plat-yt{background:rgba(224,51,51,.1);color:var(--yt)}
-.plat-ys{background:rgba(224,51,51,.08);color:var(--yt)}
-.prop-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;line-height:1.25;flex:1}
-.prop-dur{font-size:10px;color:var(--text-3);margin-bottom:6px}
-.prop-hook{font-size:11px;color:var(--text-2);border-left:2px solid var(--accent);padding-left:8px;margin-bottom:9px;line-height:1.45;font-style:italic}
-.prop-storyboard{display:flex;gap:3px;margin-bottom:10px}
-.prop-sb-frame{width:44px;height:25px;border-radius:1px;overflow:hidden;flex-shrink:0;background:var(--surface-2)}
-.prop-sb-frame img{width:100%;height:100%;display:block;object-fit:cover}
-.prop-sb-more{width:28px;height:25px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-3);background:var(--surface-2);border-radius:1px;flex-shrink:0}
-.prop-actions{display:flex;gap:5px}
-.prop-btn{flex:1;padding:5px 0;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;cursor:pointer;transition:all .1s}
-.prop-btn:hover{background:var(--surface-2);color:var(--text-2)}
-.prop-btn.saved{border-color:rgba(201,167,74,.3);background:var(--accent-lo);color:var(--accent)}
-.prop-btn.copied{border-color:rgba(93,187,138,.3);background:rgba(93,187,138,.1);color:var(--good)}
+.div { border:none; border-top:1px solid var(--border); margin:0 }
 
-/* Caption modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;width:480px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column}
-.modal-head{padding:14px 16px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:8px}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;flex:1}
-.modal-close{cursor:pointer;color:var(--text-3);font-size:16px;transition:color .1s}
-.modal-close:hover{color:var(--text-2)}
-.modal-body{padding:14px 16px;overflow-y:auto;flex:1}
-.caption-text{font-size:12px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:10px 12px;margin-bottom:10px;font-family:'Epilogue',sans-serif}
-.hashtag-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
-.htag{font-size:10px;padding:2px 7px;background:var(--accent-lo);border:1px solid rgba(201,167,74,.2);border-radius:12px;color:var(--accent)}
-.modal-foot{padding:10px 16px;border-top:1px solid var(--border-soft);display:flex;justify-content:flex-end;gap:6px}
-.modal-btn{padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-2);font-family:'Epilogue',sans-serif;font-size:12px;cursor:pointer;transition:all .1s}
-.modal-btn:hover{background:var(--surface-2);color:var(--text)}
-.modal-btn.primary{background:var(--accent);border-color:var(--accent);color:#0C0D10}
-.modal-btn.primary:hover{filter:brightness(1.08)}
-.modal-btn.success{background:rgba(93,187,138,.15);border-color:rgba(93,187,138,.3);color:var(--good)}
+.section { padding: 60px 0 }
+.sec-head { display:flex; align-items:baseline; gap:16px; margin-bottom:34px }
+.sec-h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(22px,3.5vw,32px); color:var(--text); font-weight:400; font-style:italic }
+.sec-rule { flex:1; height:1px; background:var(--border) }
+.sec-note { font-family:'Space Mono',monospace; font-size:10px; color:var(--text-3) }
 
-/* Trends */
-.trends-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.trend-col-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;font-style:italic;margin-bottom:10px;color:var(--text)}
-.trend-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;padding:10px 12px;margin-bottom:6px;transition:border-color .1s}
-.trend-card:hover{border-color:var(--surface-3)}
-.trend-card-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:6px}
-.trend-plat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.trend-pop{font-size:9px;margin-left:auto}
-.trend-pop.hot{color:var(--bad)}
-.trend-pop.rising{color:var(--warn)}
-.trend-pop.stable{color:var(--good)}
-.trend-desc{font-size:11px;color:var(--text-2);line-height:1.45;margin-bottom:4px}
-.trend-apply{font-size:10px;color:var(--accent);font-style:italic}
-.trend-views{font-size:9px;color:var(--text-3);margin-top:4px}
-.trends-search{display:flex;gap:8px;margin-bottom:18px}
-.trends-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:7px 12px;color:var(--text);font-family:'Epilogue',sans-serif;font-size:12px;outline:none}
-.trends-input::placeholder{color:var(--text-3)}
-.trends-input:focus{border-color:rgba(201,167,74,.35)}
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:8px; margin-bottom:40px }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px 16px; transition:border-color .2s }
+.stat:hover { border-color:var(--border-m) }
+.stat-n { font-family:'Cormorant Garamond',serif; font-size:48px; line-height:1; color:var(--teal-b); margin-bottom:5px; font-weight:400 }
+.stat-label { font-size:11px; color:var(--text-3) }
 
-/* Breakdown panel */
-.dp-breakdown{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
-.bk-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.bk-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:500}
-.bk-rescan{font-size:10px;color:var(--text-3);background:none;border:none;cursor:pointer;font-family:'Epilogue',sans-serif;padding:0}
-.bk-rescan:hover{color:var(--accent)}
-/* Timeline bar */
-.bk-bar-wrap{position:relative;margin-bottom:6px;cursor:col-resize}
-.bk-bar{display:flex;height:20px;border-radius:3px;overflow:hidden;gap:2px}
-.bk-cursor{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px;opacity:.85;pointer-events:none;transform:translateX(-50%);transition:left .08s linear;display:none}
-.bk-bar-wrap:hover .bk-cursor{opacity:1}
-.bk-seg{flex:var(--w);background:var(--c);opacity:.5;transition:opacity .1s;border-radius:2px;position:relative;min-width:0}
-.bk-seg:hover,.bk-seg.active{opacity:1}
-.bk-seg.active::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--c)}
-.bk-tc-row{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-bottom:10px}
-/* Segment list */
-.bk-list{display:flex;flex-direction:column;gap:4px}
-.bk-item{border:1px solid var(--border);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color .1s}
-.bk-item:hover{border-color:var(--surface-3)}
-.bk-item.active{border-color:color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 15%,transparent)}
-.bk-row{display:flex;align-items:center;gap:8px;padding:7px 9px}
-.bk-dot{width:7px;height:7px;border-radius:50%;background:var(--c);flex-shrink:0}
-.bk-tc{font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px}
-.bk-type{font-size:11px;font-weight:500;color:var(--text-2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bk-badge{font-size:9px;padding:2px 6px;border-radius:10px;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 28%,transparent);white-space:nowrap;flex-shrink:0}
-.bk-chevron{font-size:9px;color:var(--text-3);flex-shrink:0;transition:transform .12s}
-.bk-item.active .bk-chevron{transform:rotate(90deg)}
-.bk-detail{display:none;padding:0 9px 9px 24px;border-top:1px solid var(--border);padding-top:8px}
-.bk-item.active .bk-detail{display:block}
-.bk-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px}
-.bk-drow{display:flex;flex-direction:column;gap:1px}
-.bk-dlbl{font-size:9px;color:var(--text-3);letter-spacing:.04em;text-transform:uppercase}
-.bk-dval{font-size:10px;color:var(--text-2);font-weight:500;line-height:1.3}
-.bk-motion-wrap{display:flex;align-items:center;gap:5px}
-.bk-motion-track{flex:1;height:2px;background:var(--surface-3);border-radius:1px;overflow:hidden}
-.bk-motion-fill{height:100%;background:var(--c);border-radius:1px}
-.bk-notes{font-size:10px;color:var(--text-2);line-height:1.55;padding:7px 9px;background:var(--surface-2);border-radius:3px;border-left:2px solid var(--c)}
-.bk-copy{font-size:9px;color:var(--text-3);background:none;border:1px solid var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:'Epilogue',sans-serif;margin-top:6px;display:block;transition:color .1s,border-color .1s}
-.bk-copy:hover{color:var(--accent);border-color:rgba(201,167,74,.4)}
-/* Scanning state */
-.bk-scanning{font-size:11px;color:var(--text-3);text-align:center;padding:12px 0;display:flex;align-items:center;justify-content:center;gap:6px}
-.bk-spinner{width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* ── Preview modal ── */
-.pv-overlay{position:fixed;inset:0;background:rgba(6,7,10,.93);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px 16px;opacity:0;pointer-events:none;transition:opacity .18s}
-.pv-overlay.open{opacity:1;pointer-events:auto}
-.pv-modal{width:100%;max-width:920px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 40px);transform:translateY(6px);transition:transform .18s}
-.pv-overlay.open .pv-modal{transform:translateY(0)}
-.pv-header{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.pv-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pv-meta{font-size:10px;color:var(--text-3);display:flex;gap:12px;flex-shrink:0}
-.pv-close{width:28px;height:28px;border-radius:4px;background:none;border:1px solid var(--border);color:var(--text-3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .1s,border-color .1s;font-family:'Epilogue',sans-serif}
-.pv-close:hover{color:var(--text);border-color:var(--surface-3)}
-.pv-body{display:grid;grid-template-columns:1fr 252px;flex:1;overflow:hidden;min-height:0}
-.pv-video-pane{display:flex;flex-direction:column;background:#000;border-right:1px solid var(--border);overflow:hidden}
-.pv-video-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#000;position:relative}
-.pv-video-wrap video{max-width:100%;max-height:100%;display:block}
-.pv-seg-overlay{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:linear-gradient(transparent,rgba(0,0,0,.65));font-size:10px;display:flex;gap:7px;align-items:center;pointer-events:none;opacity:0;transition:opacity .2s}
-.pv-seg-overlay.show{opacity:1}
-.pvo-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.pvo-type{font-weight:500;color:rgba(255,255,255,.9)}
-.pvo-use{color:rgba(255,255,255,.5)}
-.pv-scrubber{padding:9px 12px 11px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
-.pv-tl-wrap{position:relative;margin-bottom:5px;cursor:col-resize}
-.pv-tl-bar{display:flex;height:16px;gap:2px;border-radius:3px;overflow:visible;position:relative}
-.pv-tl-seg{flex:var(--w);background:var(--c);opacity:.4;min-width:0;border-radius:2px;transition:opacity .1s}
-.pv-tl-seg.active{opacity:1}
-.pv-playhead{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px;transform:translateX(-50%);pointer-events:none;box-shadow:0 0 5px rgba(255,255,255,.35)}
-.pv-tl-tc{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-bottom:7px}
-.pv-transport{display:flex;align-items:center;gap:7px}
-.pvt-btn{width:28px;height:28px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s;flex-shrink:0;font-family:'Epilogue',sans-serif}
-.pvt-btn:hover{background:var(--surface-3);color:var(--text)}
-.pvt-play{background:var(--accent);border-color:transparent;color:#000;width:34px;height:34px;font-size:13px}
-.pvt-play:hover{opacity:.85}
-.pvt-time{font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:1;text-align:center}
-.pvt-speed{font-size:10px;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:3px;padding:3px 7px;cursor:pointer;font-family:'Epilogue',sans-serif;transition:color .1s}
-.pvt-speed:hover{color:var(--text)}
-.pv-seg-panel{display:flex;flex-direction:column;overflow:hidden}
-.pvsp-head{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.pvsp-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
-.pvsp-count{font-size:10px;color:var(--text-3)}
-.pvsp-list{flex:1;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:3px}
-.pvsp-list::-webkit-scrollbar{width:3px}
-.pvsp-list::-webkit-scrollbar-track{background:transparent}
-.pvsp-list::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
-.pvsp-item{border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color .1s,background .1s}
-.pvsp-item:hover{border-color:var(--surface-3)}
-.pvsp-item.active{border-color:color-mix(in srgb,var(--c) 50%,transparent);background:color-mix(in srgb,var(--c) 7%,transparent)}
-.pvsp-row{display:flex;align-items:center;gap:6px;padding:6px 8px}
-.pvsp-now{width:4px;height:4px;border-radius:50%;background:var(--c);flex-shrink:0;opacity:0;transition:opacity .15s;box-shadow:0 0 4px var(--c)}
-.pvsp-item.active .pvsp-now{opacity:1}
-.pvsp-dot{width:6px;height:6px;border-radius:50%;background:var(--c);flex-shrink:0}
-.pvsp-tc{font-size:9px;color:var(--text-3);font-variant-numeric:tabular-nums;min-width:52px}
-.pvsp-type{font-size:11px;font-weight:500;color:var(--text-2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pvsp-badge{font-size:9px;padding:1px 5px;border-radius:8px;background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);white-space:nowrap;flex-shrink:0}
-.pv-no-segs{padding:16px;font-size:11px;color:var(--text-3);text-align:center}
-/* Debug panel */
-.dp-debug{margin-top:8px;border-top:1px solid var(--border);padding-top:7px}
-.dp-debug-toggle{width:100%;background:none;border:none;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;text-align:left;cursor:pointer;padding:0;display:flex;justify-content:space-between;align-items:center}
-.dp-debug-toggle:hover{color:var(--text-2)}
-.dp-debug-body{display:none;margin-top:6px}
-.dp-debug-body.open{display:block}
-.dp-debug-tier{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;opacity:.8}
-.dp-debug-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
-.dp-debug-row{display:flex;justify-content:space-between;font-size:10px;padding:1px 0}
-.dp-debug-key{color:var(--text-3)}
-.dp-debug-val{color:var(--text-2);font-variant-numeric:tabular-nums;font-weight:500}
-/* Analyze mode row */
-.dp-analyze-row{display:flex;gap:4px;margin-bottom:4px}
-.dp-analyze-row .dp-action{flex:1}
-.dp-mode-select{background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text-3);font-family:'Epilogue',sans-serif;font-size:10px;padding:0 6px;cursor:pointer;outline:none;flex-shrink:0}
-.dp-mode-select:focus{border-color:rgba(201,167,74,.35)}
-.dp-mode-select option{background:var(--surface)}
-/* Tier status line */
-.dp-tier-status{font-size:10px;color:var(--text-3);margin-bottom:6px;min-height:14px;transition:color .15s}
-.dp-tier-status.ok{color:var(--good)}
-.dp-tier-status.warn{color:var(--warn)}
-/* Confirm bar */
-/* Scrollbar */
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
+.feat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px }
+.feat-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px; cursor:default; transition:border-color .2s, box-shadow .2s; box-shadow:var(--card-shadow) }
+.feat-card:hover { border-color:var(--border-m); box-shadow:var(--glow) }
+.feat-icon { font-size:20px; margin-bottom:12px }
+.feat-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px }
+.feat-desc { font-size:12px; color:var(--text-2); line-height:1.65 }
+.feat-badge { display:inline-block; margin-top:10px; font-size:9px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:2px 7px; border-radius:3px }
+.bt { background:rgba(201,167,74,.12); color:var(--teal-b); border:1px solid rgba(201,167,74,.22) }
+.ba { background:rgba(212,137,90,.12); color:var(--amber); border:1px solid rgba(212,137,90,.22) }
 
-/* ── Bin / cull badges ── */
-.bin-badge{position:absolute;top:6px;left:6px;z-index:3;font-size:8px;font-weight:700;padding:2px 5px;border-radius:2px;letter-spacing:.05em;pointer-events:none}
-.bin-badge.keep{background:rgba(93,187,138,.2);border:1px solid rgba(93,187,138,.4);color:#5DBB8A}
-.bin-badge.cut{background:rgba(204,78,78,.18);border:1px solid rgba(204,78,78,.4);color:var(--bad)}
-.bin-badge.maybe{background:rgba(201,167,74,.15);border:1px solid rgba(201,167,74,.3);color:var(--accent)}
-.used-badge{position:absolute;top:6px;right:28px;z-index:3;font-size:8px;font-weight:600;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3);color:#58A6FF;padding:2px 5px;border-radius:2px;pointer-events:none}
+.snd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:8px }
+.snd-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 14px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s }
+.snd-card:hover { border-color:var(--border-m) }
+.snd-card.playing { border-color:var(--teal-b); box-shadow:var(--glow) }
+.snd-btn { width:30px; height:30px; border-radius:50%; background:rgba(201,167,74,.1); border:1px solid rgba(201,167,74,.2); color:var(--teal-b); font-size:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s }
+.snd-card:hover .snd-btn { background:rgba(201,167,74,.18) }
+.snd-card.playing .snd-btn { background:var(--teal); color:#0C0D10; border-color:var(--teal) }
+.snd-name { font-size:12px; color:var(--text); font-weight:500 }
+.snd-hint { font-size:10px; color:var(--text-3); margin-top:1px }
 
-/* Bin quick-action overlay (shows on hover) */
-.frame-bin-wrap{position:absolute;bottom:0;left:0;right:0;z-index:4;display:flex;gap:4px;padding:5px;background:linear-gradient(transparent,rgba(0,0,0,.6));opacity:0;transition:opacity .12s;pointer-events:none}
-.frame:hover .frame-bin-wrap{opacity:1;pointer-events:auto}
-.bko{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;border:1px solid;flex-shrink:0;transition:all .1s}
-.bko.k{border-color:#5DBB8A;color:#5DBB8A;background:rgba(93,187,138,.1)}
-.bko.k:hover{background:rgba(93,187,138,.35)}
-.bko.x{border-color:var(--bad);color:var(--bad);background:rgba(204,78,78,.1)}
-.bko.x:hover{background:rgba(204,78,78,.3)}
-.bko.m{border-color:var(--accent);color:var(--accent);background:rgba(201,167,74,.08)}
-.bko.m:hover{background:rgba(201,167,74,.25)}
-.bko.u{border-color:#58A6FF;color:#58A6FF;background:rgba(88,166,255,.08);margin-left:auto}
-.bko.u:hover{background:rgba(88,166,255,.22)}
-.bko.r{border-color:rgba(168,171,186,.4);color:var(--text-3);background:transparent}
-.bko.r:hover{background:rgba(168,171,186,.15);color:var(--text)}
-/* Portrait orientation badge */
-.portrait-badge{position:absolute;top:6px;right:6px;z-index:3;font-size:9px;line-height:1;padding:2px 4px;border-radius:2px;background:rgba(30,32,40,.7);border:1px solid rgba(168,171,186,.25);color:var(--text-3);pointer-events:none;letter-spacing:.02em}
-.portrait-badge.override{border-color:rgba(201,167,74,.5);color:var(--accent)}
+.grade-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px }
+.grade-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; overflow:hidden; box-shadow:var(--card-shadow); transition:border-color .2s }
+.grade-card:hover { border-color:var(--border-m) }
+.grade-hd { padding:9px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center }
+.grade-name { font-size:11px; font-weight:600; color:var(--teal) }
+.grade-ext { font-family:'Space Mono',monospace; font-size:9px; color:var(--text-3); text-transform:uppercase }
+.grade-screens { display:grid; grid-template-columns:1fr 1px 1fr }
+.grade-side { aspect-ratio:16/9; position:relative; display:flex; align-items:center; justify-content:center; font-size:18px }
+.gs-label { position:absolute; top:4px; left:5px; font-family:'Space Mono',monospace; font-size:8px; color:rgba(255,255,255,.4); background:rgba(0,0,0,.4); padding:1px 4px; border-radius:2px }
+.grade-mid { background:var(--border) }
 
-/* Sort / view controls */
-.sort-select{margin-left:auto;font-size:11px;color:var(--text-3);background:transparent;border:1px solid var(--border);border-radius:3px;cursor:pointer;outline:none;font-family:'Epilogue',sans-serif;padding:2px 6px}
-.sort-select option{background:var(--bg)}
-.view-toggle{display:flex;border:1px solid var(--border);border-radius:3px;overflow:hidden}
-.vtb{padding:3px 8px;font-size:10px;background:transparent;border:none;color:var(--text-3);cursor:pointer;transition:all .1s}
-.vtb.on{background:var(--surface-2);color:var(--text)}
-.pill-filter.bin-pill{font-size:10px}
-.pill-filter.bin-pill.keep.on{background:rgba(93,187,138,.12);border-color:rgba(93,187,138,.35);color:#5DBB8A}
-.pill-filter.bin-pill.cut.on{background:rgba(204,78,78,.1);border-color:rgba(204,78,78,.3);color:var(--bad)}
-.pill-filter.bin-pill.maybe.on{background:rgba(201,167,74,.1);border-color:rgba(201,167,74,.25);color:var(--accent)}
+.anim-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px }
+.anim-chip { padding:5px 12px; border-radius:20px; border:1px solid var(--border); font-size:11px; color:var(--text-3); font-weight:500; background:var(--panel); cursor:pointer; transition:border-color .15s, color .15s; display:flex; align-items:center; gap:5px }
+.anim-chip:hover { border-color:var(--border-m); color:var(--text-2) }
+.anim-chip.active { border-color:var(--teal); color:var(--teal-b); background:rgba(201,167,74,.08) }
+.anim-dot { width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0 }
+#anim-demo { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:24px; min-height:80px; display:flex; align-items:center }
 
-/* Sidebar extras */
-.rail-sect-head{font-size:9px;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;padding:6px 0 3px;opacity:.7}
-.bin-row,.coll-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;color:var(--text-2);transition:background .1s}
-.bin-row:hover,.coll-row:hover{background:var(--surface-2)}
-.bin-row.on,.coll-row.on{background:var(--surface-2);color:var(--text)}
-.bin-pip,.coll-icon{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.coll-icon{border-radius:2px}
-.coll-n{font-size:10px;color:var(--text-3);margin-left:auto}
-.coll-add{width:100%;text-align:left;background:none;border:none;color:var(--text-3);font-size:10px;padding:4px 8px;cursor:pointer;font-family:'Epilogue',sans-serif;transition:color .1s}
-.coll-add:hover{color:var(--accent)}
+footer { border-top:1px solid var(--border); padding:26px 0 40px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px }
+.foot-copy { font-size:11px; color:var(--text-3) }
+.stack-list { display:flex; gap:5px; flex-wrap:wrap }
+.stack-tag { font-family:'Space Mono',monospace; font-size:9px; padding:3px 8px; border-radius:4px; border:1px solid var(--border); color:var(--text-3) }
 
-/* Timeline view */
-.tl-day{margin-bottom:24px}
-.tl-day-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
-.tl-day-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--text-2)}
-.tl-day-n{font-size:10px;color:var(--text-3)}
-.tl-day-line{flex:1;height:1px;background:var(--border-soft)}
-
-/* Quick review modal */
-.review-overlay{position:fixed;inset:0;background:rgba(6,7,10,.96);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center}
-.review-overlay.open{display:flex}
-.rev-progress{position:absolute;top:0;left:0;right:0;height:2px;background:var(--surface-3)}
-.rev-progress-fill{height:100%;background:var(--accent);transition:width .15s}
-.rev-close{position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--text-3);font-size:18px;cursor:pointer;line-height:1}
-.rev-close:hover{color:var(--text)}
-.rev-thumb{width:min(72vw,840px);aspect-ratio:16/9;background:var(--surface-2);position:relative;border-radius:4px;overflow:hidden}
-.rev-thumb img,.rev-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
-.rev-bin-flash{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .08s}
-.rev-meta{text-align:center;margin-top:14px}
-.rev-name{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);margin-bottom:4px}
-.rev-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
-.rev-counter{font-size:11px;color:var(--text-3)}
-.rev-actions{display:flex;gap:10px;margin-top:18px}
-.rev-btn{padding:8px 22px;border-radius:4px;font-family:'Epilogue',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;letter-spacing:.04em;transition:all .1s}
-.rev-btn.keep{background:rgba(93,187,138,.12);border-color:rgba(93,187,138,.4);color:#5DBB8A}
-.rev-btn.keep:hover,.rev-btn.keep.active{background:rgba(93,187,138,.3)}
-.rev-btn.cut{background:rgba(204,78,78,.1);border-color:rgba(204,78,78,.35);color:var(--bad)}
-.rev-btn.cut:hover,.rev-btn.cut.active{background:rgba(204,78,78,.28)}
-.rev-btn.maybe{background:rgba(201,167,74,.08);border-color:rgba(201,167,74,.3);color:var(--accent)}
-.rev-btn.maybe:hover,.rev-btn.maybe.active{background:rgba(201,167,74,.22)}
-.rev-nav-row{display:flex;align-items:center;gap:16px;margin-top:12px}
-.rev-nav-btn{background:transparent;border:1px solid var(--border);color:var(--text-3);padding:5px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-family:'Epilogue',sans-serif}
-.rev-nav-btn:hover{color:var(--text);border-color:var(--surface-3)}
-.rev-hint{font-size:10px;color:var(--text-3);margin-top:6px;letter-spacing:.03em}
+@keyframes shimmer { 0%{background-position:-400px 0}100%{background-position:400px 0} }
+.shimmer { background:linear-gradient(90deg,var(--panel) 25%,var(--surface) 50%,var(--panel) 75%); background-size:400px 100%; animation:shimmer 1.6s ease-in-out infinite }
 </style>
 </head>
 <body>
+<canvas id="grain"></canvas>
 
-<div class="shell">
-  <aside class="rail">
-    <div class="wordmark"><span class="wordmark-text"><em>F</em>ootage</span></div>
-    <nav class="rail-nav">
-      <div class="nav-item on" data-view="library">
-        <span class="nav-icon">▦</span> Library <span class="nav-count" id="nc-library">0</span>
-      </div>
-      <div class="nav-item" data-view="proposals">
-        <span class="nav-icon">✦</span> Proposals <span class="nav-count" id="nc-proposals">0</span>
-      </div>
-      <div class="nav-item" data-view="trends">
-        <span class="nav-icon">↗</span> Trends <span class="nav-count" id="nc-trends">0</span>
-      </div>
-      <div class="nav-item" data-view="grade">
-        <span class="nav-icon">◑</span> Grade
-      </div>
-    </nav>
-    <div class="rail-sep"></div>
-    <div class="rail-sect" id="cat-filter-list"></div>
-    <div class="rail-sep" id="seg-filter-sep" style="display:none"></div>
-    <div class="rail-sect" id="seg-filter-list"></div>
-    <div class="rail-sep" id="bin-filter-sep" style="display:none"></div>
-    <div class="rail-sect" id="bin-filter-list"></div>
-    <div class="rail-sep"></div>
-    <div class="rail-sect">
-      <div class="rail-sect-head">Collections</div>
-      <div id="coll-list"></div>
-      <button class="coll-add" id="coll-add-btn">+ New collection</button>
-    </div>
-    <div class="quality-summary" id="quality-summary" style="display:none">
-      <div class="qs-head">Quality distribution</div>
-      <div class="qs-row">
-        <div class="qs-label" style="color:var(--good)">High</div>
-        <div class="qs-track"><div class="qs-fill" id="qs-hi" style="background:var(--good)"></div></div>
-        <div class="qs-n" id="qs-hi-n">0</div>
-      </div>
-      <div class="qs-row">
-        <div class="qs-label" style="color:var(--warn)">Mid</div>
-        <div class="qs-track"><div class="qs-fill" id="qs-mid" style="background:var(--warn)"></div></div>
-        <div class="qs-n" id="qs-mid-n">0</div>
-      </div>
-      <div class="qs-row">
-        <div class="qs-label" style="color:var(--bad)">Low</div>
-        <div class="qs-track"><div class="qs-fill" id="qs-lo" style="background:var(--bad)"></div></div>
-        <div class="qs-n" id="qs-lo-n">0</div>
-      </div>
-    </div>
-  </aside>
+<nav>
+  <div class="nav-logo"><em>F</em>ootage</div>
+  <div class="nav-links">
+    <span class="nav-link">Library</span>
+    <span class="nav-link">Grade</span>
+    <span class="nav-link">Proposals</span>
+  </div>
+  <a href="/dashboard" style="text-decoration:none"><button class="nav-cta">Open App →</button></a>
+  <button class="nav-cta" id="demo-btn" style="background:transparent;border:1px solid rgba(201,167,74,.3);color:var(--teal-b)">▶ Sounds</button>
+</nav>
 
-  <header class="topbar">
-    <div class="folder-pill">
-      <span class="folder-icon">▸</span>
-      <input class="folder-input" id="folder-input" placeholder="Enter video folder path…" spellcheck="false">
-    </div>
-    <button class="tb-btn" id="scan-btn">Scan</button>
-    <button class="tb-btn" id="import-btn" title="Browse or drag files to import">Import</button>
-    <button class="tb-btn" id="analyze-all-btn">Analyze All</button>
-    <button class="tb-btn primary" id="propose-btn">Propose</button>
-    <button class="tb-btn" id="export-btn" title="Export library as CSV">Export</button>
-    <button class="tb-btn" id="shotlist-btn" title="Export shot list with timecodes as CSV">Shot List</button>
-    <button class="tb-btn" id="reset-btn" title="Clear all analysis results">Reset</button>
-    <div class="tb-right">
-      <div class="status-tag"><span class="pulse" id="pulse-dot"></span><span id="status-text">Ready</span></div>
-      <button class="icon-btn" id="theme-btn" title="Toggle theme">◑</button>
-    </div>
-    <div class="scan-bar" id="scan-bar"><div class="scan-fill" id="scan-fill"></div></div>
-  </header>
-
-  <main class="main">
-    <!-- Library -->
-    <div id="v-library" class="view on">
-      <div class="view-bar">
-        <span class="view-title">Library</span>
-        <button class="pill-filter on" data-filter="all">All</button>
-        <button class="pill-filter" data-filter="usable">Usable only</button>
-        <button class="pill-filter bin-pill keep" data-filter="keep">Keep</button>
-        <button class="pill-filter bin-pill cut" data-filter="cut">Cut</button>
-        <button class="pill-filter bin-pill maybe" data-filter="maybe">Maybe</button>
-        <button class="tb-btn" id="review-btn" title="Quick review mode">Review</button>
-        <div class="view-toggle" style="margin-left:auto">
-          <button class="vtb on" id="vtb-grid" title="Grid view">▦</button>
-          <button class="vtb" id="vtb-timeline" title="Timeline view">≡</button>
-        </div>
-        <select class="sort-select" id="sort-select">
-          <option value="quality">Quality ↓</option>
-          <option value="duration">Duration ↓</option>
-          <option value="filename">Name A–Z</option>
-          <option value="date">Date ↓</option>
-        </select>
-      </div>
-      <div class="scroll" id="library-scroll">
-        <div id="library-content"></div>
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <div class="hero-pill"><div class="pulse-dot"></div>FastAPI · Claude · ffmpeg</div>
+      <h1 class="hero-h1">Your footage,<br><em style="font-style:italic;color:var(--teal-b)">analyzed.</em></h1>
+      <p class="hero-sub">Scan a folder. Three-tier AI analysis. Grade with DaVinci color science. Cull your best shots — local, private, fast.</p>
+      <div class="hero-btns">
+        <a href="/dashboard" style="text-decoration:none"><button class="btn-primary">Open the app →</button></a>
+        <button class="btn-secondary" id="explore-btn">Explore features ↓</button>
       </div>
     </div>
-
-    <!-- Proposals -->
-    <div id="v-proposals" class="view">
-      <div class="view-bar">
-        <span class="view-title">Proposals</span>
-        <button class="pill-filter on" data-plat="all">All</button>
-        <button class="pill-filter" data-plat="tiktok">TikTok</button>
-        <button class="pill-filter" data-plat="reels">Reels</button>
-        <button class="pill-filter" data-plat="youtube">YouTube</button>
+    <div class="app-win" id="app-win">
+      <div class="win-bar">
+        <div class="wd" style="background:#FF5F57"></div>
+        <div class="wd" style="background:#FFBD2E"></div>
+        <div class="wd" style="background:#28CA41"></div>
+        <span class="win-title">footage — /dashboard</span>
       </div>
-      <div class="scroll">
-        <div class="proposals-grid" id="proposals-grid"></div>
+      <div class="win-tabs">
+        <div class="win-tab active">Library</div>
+        <div class="win-tab">Proposals</div>
+        <div class="win-tab">Grade</div>
+        <div class="win-tab">Collections</div>
       </div>
+      <div class="win-grid" id="win-grid"></div>
     </div>
-
-    <!-- Trends -->
-    <div id="v-trends" class="view">
-      <div class="view-bar">
-        <span class="view-title">Trends</span>
-        <span id="trends-age" style="font-size:10px;color:var(--text-3);margin-left:4px"></span>
-        <button class="pill-filter" style="margin-left:auto" id="fetch-trends-btn">Fetch latest</button>
-      </div>
-      <div class="scroll">
-        <div class="trends-search">
-          <input class="trends-input" id="trends-search-input" placeholder="Research a trend, sound, or format…">
-          <button class="tb-btn primary" id="trends-search-btn">Search</button>
-        </div>
-        <div class="trends-grid" id="trends-content"></div>
-      </div>
-    </div>
-
-    <div id="v-grade" class="view">
-      <div class="view-bar">
-        <span class="view-title">Color Grade</span>
-        <label class="pill-filter" style="margin-left:auto;cursor:pointer">
-          + Upload .drx / .cube
-          <input type="file" id="grade-upload-input" accept=".drx,.cube" style="display:none">
-        </label>
-      </div>
-      <div class="scroll" style="padding:20px">
-        <div style="display:flex;gap:20px;align-items:flex-start">
-          <!-- Grade list -->
-          <div style="width:200px;flex-shrink:0">
-            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Grades</div>
-            <div id="grade-list" style="display:flex;flex-direction:column;gap:4px"></div>
-            <div id="grade-empty" style="font-size:11px;color:var(--text-3);padding:8px 0">No grades yet — upload a .drx or .cube file</div>
-          </div>
-          <!-- Preview area -->
-          <div style="flex:1;min-width:0">
-            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Preview</div>
-            <div id="grade-clip-hint" style="font-size:11px;color:var(--text-3);padding:8px 0">Select a grade and click a clip in the library to preview</div>
-            <div id="grade-preview-wrap" style="display:none">
-              <div style="font-size:11px;color:var(--text-3);margin-bottom:8px" id="grade-preview-label"></div>
-              <div style="display:flex;gap:12px;flex-wrap:wrap">
-                <div>
-                  <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">Original</div>
-                  <img id="grade-orig-img" style="max-width:360px;width:100%;border-radius:4px;border:1px solid var(--border)">
-                </div>
-                <div>
-                  <div style="font-size:10px;color:var(--text-3);margin-bottom:4px" id="grade-graded-label">Graded</div>
-                  <div id="grade-graded-wrap" style="position:relative;display:inline-block">
-                    <img id="grade-graded-img" style="max-width:360px;width:100%;border-radius:4px;border:1px solid var(--border)">
-                    <div id="grade-loading" style="display:none;position:absolute;inset:0;background:rgba(12,13,16,.6);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3)">Applying grade…</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
+  </section>
 </div>
 
-<!-- Detail panel -->
-<div class="detail-panel" id="dp">
-  <div class="dp-head">
-    <div class="dp-thumb-wrap" id="dp-thumb-wrap"></div>
-    <div style="flex:1;min-width:0">
-      <div class="dp-title" id="dp-title">—</div>
-      <div class="dp-sub" id="dp-sub">—</div>
-      <div class="dp-qs">
-        <span style="font-size:10px;color:var(--text-3)">Quality</span>
-        <div class="dp-qs-bar"><div class="dp-qs-fill" id="dp-qs-fill"></div></div>
-        <span id="dp-qs-score" style="font-size:11px;font-weight:500;font-variant-numeric:tabular-nums"></span>
-      </div>
-    </div>
-    <span class="dp-close" id="dp-close">✕</span>
-  </div>
-  <div class="dp-body">
-    <!-- Unreviewed badge (hidden when analyzed) -->
-    <div class="dp-unreviewed-badge" id="dp-unreviewed-badge" style="display:none">
-      <span></span>Not yet reviewed
-    </div>
-    <!-- Read-only fields (analyzed clips) -->
-    <div id="dp-readonly">
-      <div class="dp-row"><span class="dp-lbl">Mood</span><span class="dp-val" id="dp-mood">—</span></div>
-      <div class="dp-row"><span class="dp-lbl">Scene</span><span class="dp-val" id="dp-scene">—</span></div>
-      <div class="dp-row"><span class="dp-lbl">Lighting</span><span class="dp-val" id="dp-light">—</span></div>
-      <div class="dp-row"><span class="dp-lbl">Resolution</span><span class="dp-val" id="dp-res">—</span></div>
-      <div class="dp-note" id="dp-note" style="display:none">—</div>
-      <div class="dp-debug" id="dp-debug" style="display:none">
-        <button class="dp-debug-toggle" id="dp-debug-toggle">
-          <span>Debug</span><span id="dp-debug-arrow">▸</span>
-        </button>
-        <div class="dp-debug-body" id="dp-debug-body">
-          <div class="dp-debug-tier" id="dp-debug-tier"></div>
-          <div class="dp-debug-grid" id="dp-debug-grid"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Editable fields (always shown, pre-filled if analyzed) -->
-    <div class="dp-section" id="dp-edit-section">
-      <div class="dp-field">
-        <div class="dp-field-label">Category</div>
-        <select class="dp-select" id="dp-cat-select"></select>
-      </div>
-      <div class="dp-field">
-        <div class="dp-field-label">Quality <span id="dp-quality-display" style="color:var(--accent)"></span></div>
-        <input type="range" class="dp-input" id="dp-quality-range" min="1" max="10" step="1" style="padding:0;cursor:pointer">
-      </div>
-      <div class="dp-field">
-        <div class="dp-usable-row">
-          <button class="dp-toggle" id="dp-usable-toggle"></button>
-          <span id="dp-usable-label">Usable</span>
-        </div>
-      </div>
-      <div class="dp-field">
-        <div class="dp-field-label">Notes</div>
-        <input type="text" class="dp-input" id="dp-notes-input" placeholder="Add a note…">
-      </div>
-    </div>
-    <div class="dp-actions">
-      <button class="dp-action" id="dp-preview-btn">Preview</button>
-      <button class="dp-action" id="dp-save-btn">Save</button>
-      <div class="dp-tier-status" id="dp-tier-status"></div>
-      <div class="dp-analyze-row">
-        <button class="dp-action" id="dp-analyze-btn">Analyze</button>
-        <select class="dp-mode-select" id="dp-mode-select" title="Analysis mode">
-          <option value="auto">Auto</option>
-          <option value="cv">OpenCV</option>
-          <option value="clip">CLIP</option>
-          <option value="claude_text">Claude text</option>
-          <option value="claude_full">Claude full</option>
-        </select>
-      </div>
-      <button class="dp-action danger" id="dp-delete-btn">Delete clip</button>
-      <button class="dp-action" id="dp-similar-btn" style="background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.25);color:#58A6FF">Find similar</button>
-      <button class="dp-action" id="dp-rotate-btn" title="Toggle portrait / landscape orientation">⟳ Portrait</button>
-      <button class="dp-action" id="dp-used-btn">Mark as used in edit</button>
-      <div id="dp-bin-row" style="display:flex;gap:4px;margin-top:2px">
-        <button class="dp-action" id="dp-bin-keep" style="flex:1;background:rgba(93,187,138,.1);border-color:rgba(93,187,138,.3);color:#5DBB8A">K Keep</button>
-        <button class="dp-action" id="dp-bin-maybe" style="flex:1;background:rgba(201,167,74,.08);border-color:rgba(201,167,74,.25);color:var(--accent)">M Maybe</button>
-        <button class="dp-action" id="dp-bin-cut" style="flex:1;background:rgba(204,78,78,.08);border-color:rgba(204,78,78,.2);color:var(--bad)">X Cut</button>
-      </div>
-      <select class="dp-mode-select" id="dp-coll-select" style="width:100%;padding:6px;margin-top:2px;font-size:11px" title="Add to collection">
-        <option value="">Add to collection…</option>
-      </select>
-    </div>
-    <!-- Breakdown panel -->
-    <div class="dp-breakdown" id="dp-breakdown" style="display:none">
-      <div class="bk-head">
-        <span class="bk-title">Breakdown</span>
-        <button class="bk-rescan" id="bk-rescan">Re-scan</button>
-      </div>
-      <div id="bk-body"></div>
-    </div>
-    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-      <button class="dp-action" id="dp-breakdown-btn">Breakdown</button>
-    </div>
-  </div>
+<hr class="div">
+
+<div class="wrap">
+  <section class="section" id="features">
+    <div class="sec-head reveal"><h2 class="sec-h2">What it does</h2><div class="sec-rule"></div></div>
+    <div class="stats-grid reveal-group" id="stats-grid"></div>
+    <div class="feat-grid reveal-group" id="feat-grid"></div>
+  </section>
 </div>
 
-<!-- Preview modal -->
-<div class="pv-overlay" id="pv-overlay">
-  <div class="pv-modal">
-    <div class="pv-header">
-      <div class="pv-title" id="pv-title"></div>
-      <div class="pv-meta" id="pv-meta"></div>
-      <button class="pv-close" id="pv-rotate-btn" title="Rotate 90° CW" style="display:none">⟳</button>
-      <button class="pv-close" id="pv-close">✕</button>
-    </div>
-    <div class="pv-body">
-      <div class="pv-video-pane">
-        <div class="pv-video-wrap" id="pv-video-wrap">
-          <video id="pv-video" preload="metadata" playsinline></video>
-          <div class="pv-seg-overlay" id="pv-seg-overlay">
-            <div class="pvo-dot" id="pvo-dot"></div>
-            <span class="pvo-type" id="pvo-type"></span>
-            <span class="pvo-use" id="pvo-use"></span>
-          </div>
-        </div>
-        <div class="pv-scrubber">
-          <div class="pv-tl-wrap" id="pv-tl-wrap">
-            <div class="pv-tl-bar" id="pv-tl-bar"></div>
-            <div class="pv-playhead" id="pv-playhead" style="left:0%"></div>
-          </div>
-          <div class="pv-tl-tc">
-            <span>0:00</span>
-            <span id="pv-tc-cur">0:00</span>
-            <span id="pv-tc-dur">0:00</span>
-          </div>
-          <div class="pv-transport">
-            <button class="pvt-btn" id="pv-btn-prev" title="Prev segment">⏮</button>
-            <button class="pvt-btn pvt-play" id="pv-btn-play">▶</button>
-            <button class="pvt-btn" id="pv-btn-next" title="Next segment">⏭</button>
-            <span class="pvt-time" id="pv-tpt-time">0:00 / 0:00</span>
-            <button class="pvt-speed" id="pv-btn-speed">1×</button>
-          </div>
-        </div>
-      </div>
-      <div class="pv-seg-panel">
-        <div class="pvsp-head">
-          <span class="pvsp-title">Segments</span>
-          <span class="pvsp-count" id="pvsp-count"></span>
-        </div>
-        <div class="pvsp-list" id="pvsp-list"></div>
-      </div>
-    </div>
-  </div>
+<hr class="div">
+
+<div class="wrap">
+  <section class="section">
+    <div class="sec-head reveal"><h2 class="sec-h2">Sound effects</h2><div class="sec-rule"></div><span class="sec-note">Web Audio API · no files</span></div>
+    <div class="snd-grid reveal-group" id="snd-grid"></div>
+  </section>
 </div>
 
-<!-- Drag-drop overlay -->
-<div class="drop-overlay" id="drop-overlay">
-  <div class="drop-ring">
-    <div class="drop-icon">⬇</div>
-    <div class="drop-label">Drop video files</div>
-    <div class="drop-sub">mp4 · mov · avi · mkv</div>
-  </div>
-</div>
-<!-- Hidden file input for Browse -->
-<input type="file" id="file-input" multiple accept=".mp4,.mov,.avi,.mkv,.MP4,.MOV,.AVI,.MKV,video/*">
+<hr class="div">
 
-<!-- Caption modal -->
-<div class="modal-overlay" id="caption-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="modal-title">Caption</div>
-      <span class="modal-close" id="modal-close">✕</span>
-    </div>
-    <div class="modal-body">
-      <div class="caption-text" id="modal-caption"></div>
-      <div class="hashtag-row" id="modal-hashtags"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="modal-btn" id="modal-close-btn">Close</button>
-      <button class="modal-btn primary" id="copy-btn">Copy caption</button>
-    </div>
-  </div>
+<div class="wrap">
+  <section class="section">
+    <div class="sec-head reveal"><h2 class="sec-h2">Color grade system</h2><div class="sec-rule"></div><span class="sec-note">.drx · .cube · ASC CDL → 33³ LUT</span></div>
+    <div class="grade-grid feature-showcase" data-direction="right" id="grade-grid"></div>
+  </section>
 </div>
 
-<!-- Quick review modal -->
-<div class="review-overlay" id="review-overlay">
-  <div class="rev-progress"><div class="rev-progress-fill" id="rev-progress-fill"></div></div>
-  <button class="rev-close" id="rev-close">✕</button>
-  <div class="rev-thumb" id="rev-thumb"></div>
-  <div class="rev-meta">
-    <div class="rev-name" id="rev-name"></div>
-    <div class="rev-tags" id="rev-tags"></div>
-    <div class="rev-counter" id="rev-counter"></div>
-  </div>
-  <div class="rev-actions">
-    <button class="rev-btn keep" id="rev-keep">K  Keep</button>
-    <button class="rev-btn maybe" id="rev-maybe">M  Maybe</button>
-    <button class="rev-btn cut" id="rev-cut">X  Cut</button>
-  </div>
-  <div class="rev-nav-row">
-    <button class="rev-nav-btn" id="rev-prev">← Prev</button>
-    <button class="rev-nav-btn" id="rev-next">Next →</button>
-  </div>
-  <div class="rev-hint">K / M / X to bin · ← → to navigate · Space to preview · Esc to exit</div>
+<hr class="div">
+
+<div class="wrap">
+  <section class="section">
+    <div class="sec-head reveal"><h2 class="sec-h2">Animations</h2><div class="sec-rule"></div><span class="sec-note">GSAP 3.12.5</span></div>
+    <div class="anim-chips" id="anim-chips"></div>
+    <div id="anim-demo"></div>
+  </section>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<hr class="div">
+
+<div class="wrap">
+  <footer class="final-cta">
+    <span class="foot-copy">localhost:7842 · local-first · private</span>
+    <div class="stack-list" id="stack-list"></div>
+  </footer>
+</div>
+
 <script>
-// ── State ──────────────────────────────────────────────────────────────────────
-let ALL_CLIPS = [];
-let CLIP_MAP = {};
-let activeDetail = null;
-let _captionFull = '';
-let _scanning = false;
-let _detailOpen = false;
-let _currentLibFilter = 'all';
-let _currentUsableFilter = 'all';
-let _currentSegFilter = 'all';
-let _currentBinFilter = 'all';   // all | keep | cut | maybe
-let _currentSort = 'quality';    // quality | duration | filename | date
-let _viewMode = 'grid';           // grid | timeline
-let _currentCollFilter = null;   // null | group_id (number)
-let _similarMode = false;        // showing find-similar results
-let _similarIds = new Set();
-let _hoveredClipId = null;       // for keyboard bin shortcuts
-
-// ── Category colors ────────────────────────────────────────────────────────────
-const CAT_COLORS = {
-  'travel':       '#58A6FF',
-  'golden-hour':  '#C9A74A',
-  'b-roll':       '#7A7D8A',
-  'action':       '#D98C3E',
-  'nature':       '#5DBB8A',
-  'portrait':     '#C264B8',
-  'food':         '#E07850',
-  'architecture': '#8A9FFF',
-  'other':        '#5C606E',
-};
-function catColor(cat) {
-  return CAT_COLORS[cat] || '#7A7D8A';
-}
-function catTagStyle(cat) {
-  const c = catColor(cat);
-  const rgb = hexToRgb(c);
-  return `background:rgba(${rgb},0.12);color:${c}`;
-}
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return `${r},${g},${b}`;
-}
-
-// ── Platform badge ─────────────────────────────────────────────────────────────
-function platBadge(platform) {
-  const map = {
-    'tiktok':         ['TIKTOK',  'plat-tt'],
-    'reels':          ['REELS',   'plat-ig'],
-    'youtube':        ['YOUTUBE', 'plat-yt'],
-    'youtube-shorts': ['SHORTS',  'plat-ys'],
-  };
-  const [label, cls] = map[platform] || [platform.toUpperCase(), 'plat-yt'];
-  return `<span class="plat-badge ${cls}">${label}</span>`;
-}
-
-// ── Quality class ──────────────────────────────────────────────────────────────
-function qClass(qs) {
-  return qs >= 7 ? 'q-hi' : qs >= 5 ? 'q-mid' : 'q-lo';
-}
-function qColor(qs) {
-  return qs >= 7 ? 'var(--good)' : qs >= 5 ? 'var(--warn)' : 'var(--bad)';
-}
-
-// ── Thumbnail ──────────────────────────────────────────────────────────────────
-function thumbEl(clip, w, h, bust) {
-  if (clip.has_thumb) {
-    const img = document.createElement('img');
-    img.src = `/api/clips/${clip.id}/thumb${bust ? '?t=' + bust : ''}`;
-    img.loading = 'lazy';
-    img.onerror = () => { img.replaceWith(fallbackCanvas(w, h, clip)); };
-    return img;
-  }
-  return fallbackCanvas(w, h, clip);
-}
-function fallbackCanvas(w, h, clip) {
-  const cv = document.createElement('canvas');
-  cv.width = w; cv.height = h;
-  const ctx = cv.getContext('2d');
-  // simple gradient based on category color
-  const c = catColor(clip.category);
-  const rgb = hexToRgb(c);
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, `rgba(${rgb},0.25)`);
-  g.addColorStop(1, `rgba(${rgb},0.05)`);
-  ctx.fillStyle = '#14151B';
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-  // vignette
-  const vg = ctx.createRadialGradient(w*.5,h*.5,h*.1,w*.5,h*.5,w*.7);
-  vg.addColorStop(0,'rgba(0,0,0,0)');
-  vg.addColorStop(1,'rgba(0,0,0,.55)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, w, h);
-  return cv;
-}
-
-// ── Build library ──────────────────────────────────────────────────────────────
-function sortClips(clips) {
-  const arr = [...clips];
-  if (_currentSort === 'quality')  arr.sort((a,b) => (b.quality_score||0) - (a.quality_score||0));
-  if (_currentSort === 'duration') arr.sort((a,b) => (b.duration_seconds||0) - (a.duration_seconds||0));
-  if (_currentSort === 'filename') arr.sort((a,b) => a.name.localeCompare(b.name));
-  if (_currentSort === 'date')     arr.sort((a,b) => (b.file_date||'').localeCompare(a.file_date||''));
-  return arr;
-}
-
-function applyFilters(clips) {
-  let out = clips;
-  if (_currentUsableFilter === 'usable') out = out.filter(c => c.is_usable);
-  if (_currentBinFilter !== 'all') out = out.filter(c => c.bin_status === _currentBinFilter);
-  if (_similarMode) out = out.filter(c => _similarIds.has(c.id));
-  if (_currentCollFilter !== null) {
-    const g = _GROUPS.find(g => g.id === _currentCollFilter);
-    if (g) {
-      const ids = new Set((g.clip_ids || []).map(Number));
-      out = out.filter(c => ids.has(c.id));
-    }
-  }
-  return out;
-}
-
-function buildLibrary(clips) {
-  const content = document.getElementById('library-content');
-  content.innerHTML = '';
-
-  const filtered = applyFilters(clips);
-
-  if (filtered.length === 0) {
-    content.innerHTML = `<div class="empty-state">
-      <div class="empty-title">${_similarMode ? 'No similar clips' : 'No clips yet'}</div>
-      <div class="empty-sub">${_similarMode ? 'Try a different clip.' : 'Enter a folder path and click Scan to analyze your video files.'}</div>
-    </div>`;
-    return;
-  }
-
-  const sorted = sortClips(filtered);
-
-  if (_viewMode === 'timeline') {
-    buildTimelineView(content, sorted);
-  } else {
-    buildGridView(content, sorted);
-  }
-
-  const cards = content.querySelectorAll('.frame');
-  gsap.from(cards, { opacity: 0, y: 8, duration: 0.35, stagger: 0.02, ease: 'power2.out', clearProps: 'all' });
-}
-
-function buildGridView(content, clips) {
-  // Group by category
-  const groups = {};
-  for (const clip of clips) {
-    const cat = clip.category || 'other';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(clip);
-  }
-  for (const [cat, catClips] of Object.entries(groups)) {
-    const section = document.createElement('div');
-    section.className = 'cat-section';
-    section.dataset.cat = cat;
-    const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    section.innerHTML = `
-      <div class="cat-title">${label} <span class="cat-n-label">${catClips.length} clips</span><span class="cat-title-line"></span></div>
-      <div class="clip-grid"></div>`;
-    const grid = section.querySelector('.clip-grid');
-    for (const clip of catClips) grid.appendChild(buildCard(clip));
-    content.appendChild(section);
-  }
-}
-
-function buildTimelineView(content, clips) {
-  const byDate = {};
-  for (const clip of clips) {
-    const d = clip.file_date || 'Unknown date';
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(clip);
-  }
-  for (const [date, dayClips] of Object.entries(byDate)) {
-    const section = document.createElement('div');
-    section.className = 'tl-day cat-section';
-    section.dataset.cat = 'all'; // keep filterLibrarySections compatible
-    const label = date !== 'Unknown date' ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', {weekday:'short',month:'long',day:'numeric'}) : date;
-    section.innerHTML = `
-      <div class="tl-day-head"><span class="tl-day-label">${label}</span><span class="tl-day-n">${dayClips.length} clips</span><div class="tl-day-line"></div></div>
-      <div class="clip-grid"></div>`;
-    const grid = section.querySelector('.clip-grid');
-    for (const clip of dayClips) grid.appendChild(buildCard(clip));
-    content.appendChild(section);
-  }
-}
-
-function buildCard(clip) {
-  const analyzed = !!clip.quality_score;
-  const qc = analyzed ? qClass(clip.quality_score) : 'unreviewed';
-  const card = document.createElement('div');
-  card.className = `frame ${qc}${!clip.is_usable ? ' unusable' : ''}`;
-  card.dataset.id = clip.id;
-  card.dataset.cat = clip.category;
-  card.dataset.analyzed = analyzed ? '1' : '0';
-
-  const thumb = document.createElement('div');
-  thumb.className = `frame-thumb${clip.is_portrait ? ' portrait' : ''}`;
-  thumb.appendChild(thumbEl(clip, 240, 135));
-  const dur = document.createElement('div');
-  dur.className = 'frame-dur';
-  dur.textContent = clip.duration_str;
-  thumb.appendChild(dur);
-
-  if (clip.bin_status) {
-    const bb = document.createElement('div');
-    bb.className = `bin-badge ${clip.bin_status}`;
-    bb.textContent = clip.bin_status.toUpperCase();
-    bb.id = `bin-badge-${clip.id}`;
-    thumb.appendChild(bb);
-  }
-  if (clip.used_in_edit) {
-    const ub = document.createElement('div');
-    ub.className = 'used-badge';
-    ub.textContent = 'USED';
-    ub.id = `used-badge-${clip.id}`;
-    thumb.appendChild(ub);
-  }
-  if (clip.is_portrait || clip.rotation_override) {
-    const pb = document.createElement('div');
-    pb.className = `portrait-badge${clip.rotation_override ? ' override' : ''}`;
-    pb.id = `portrait-badge-${clip.id}`;
-    pb.textContent = clip.rotation_override ? `+${clip.rotation_override}°` : '↕';
-    pb.title = clip.rotation_override ? `Rotation override: +${clip.rotation_override}°` : 'Portrait';
-    thumb.appendChild(pb);
-  }
-
-  // Bin / used-in-edit quick actions overlay
-  const binWrap = document.createElement('div');
-  binWrap.className = 'frame-bin-wrap';
-  ['K','M','X'].forEach(k => {
-    const b = document.createElement('button');
-    b.className = `bko ${k.toLowerCase()}`;
-    b.textContent = k;
-    b.title = k === 'K' ? 'Keep' : k === 'X' ? 'Cut' : 'Maybe';
-    b.addEventListener('click', e => { e.stopPropagation(); setBin(clip.id, k === 'K' ? 'keep' : k === 'X' ? 'cut' : 'maybe'); });
-    binWrap.appendChild(b);
-  });
-  const ub2 = document.createElement('button');
-  ub2.className = 'bko u';
-  ub2.textContent = '✓';
-  ub2.title = 'Toggle used in edit';
-  ub2.addEventListener('click', e => { e.stopPropagation(); toggleUsed(clip.id); });
-  binWrap.appendChild(ub2);
-  const rb = document.createElement('button');
-  rb.className = 'bko r';
-  rb.textContent = '⟳';
-  rb.title = 'Toggle portrait/landscape orientation';
-  rb.addEventListener('click', e => { e.stopPropagation(); rotateClip(clip.id); });
-  binWrap.appendChild(rb);
-  thumb.appendChild(binWrap);
-
-  // Per-card analyze button (shows on hover for unanalyzed clips)
-  if (!analyzed) {
-    const analyzeBtn = document.createElement('button');
-    analyzeBtn.className = 'frame-analyze-btn';
-    analyzeBtn.textContent = 'Analyze';
-    analyzeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      runClaudeAnalysis(clip.id, analyzeBtn);
-    });
-    thumb.appendChild(analyzeBtn);
-  }
-
-  const meta = document.createElement('div');
-  meta.className = 'frame-meta';
-  meta.innerHTML = `
-    <div class="frame-name">${clip.name}</div>
-    <div class="frame-tags">
-      <span class="tag" style="${catTagStyle(clip.category)}">${clip.category}</span>
-      ${analyzed && clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
-      ${!analyzed ? `<span class="tag" style="background:rgba(92,96,110,.1);color:var(--text-3)">unreviewed</span>` : ''}
-    </div>`;
-
-  card.appendChild(thumb);
-  card.appendChild(meta);
-  card.addEventListener('mouseenter', () => { _hoveredClipId = clip.id; });
-  card.addEventListener('mouseleave', () => { if (_hoveredClipId === clip.id) _hoveredClipId = null; });
-  card.addEventListener('click', () => openDetail(card, clip.id));
-  return card;
-}
-
-async function setBin(clipId, status) {
-  const clip = CLIP_MAP[clipId];
-  if (!clip) return;
-  const prev = clip.bin_status;
-  const newStatus = prev === status ? null : status; // toggle off if same
-  clip.bin_status = newStatus;
-  await fetch(`/api/clips/${clipId}/flag`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ bin_status: newStatus || '' }) });
-  // Update badge on card
-  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
-  if (card) {
-    let bb = document.getElementById(`bin-badge-${clipId}`);
-    if (newStatus) {
-      if (!bb) { bb = document.createElement('div'); bb.id = `bin-badge-${clipId}`; card.querySelector('.frame-thumb').appendChild(bb); }
-      bb.className = `bin-badge ${newStatus}`;
-      bb.textContent = newStatus.toUpperCase();
-    } else if (bb) { bb.remove(); }
-  }
-  if (_currentBinFilter !== 'all') buildLibrary(ALL_CLIPS);
-}
-
-async function toggleUsed(clipId) {
-  const clip = CLIP_MAP[clipId];
-  if (!clip) return;
-  clip.used_in_edit = !clip.used_in_edit;
-  await fetch(`/api/clips/${clipId}/flag`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ used_in_edit: clip.used_in_edit }) });
-  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
-  if (card) {
-    let ub = document.getElementById(`used-badge-${clipId}`);
-    if (clip.used_in_edit) {
-      if (!ub) { ub = document.createElement('div'); ub.id = `used-badge-${clipId}`; ub.className = 'used-badge'; ub.textContent = 'USED'; card.querySelector('.frame-thumb').appendChild(ub); }
-    } else if (ub) { ub.remove(); }
-  }
-}
-
-async function rotateClip(clipId) {
-  const r = await fetch(`/api/clips/${clipId}/rotate`, { method: 'PATCH' });
-  if (!r.ok) return;
-  const data = await r.json();
-  const clip = data.clip;
-  CLIP_MAP[clipId] = clip;
-  // Update card thumbnail + portrait badge
-  const bust = Date.now();
-  const card = document.querySelector(`.frame[data-id="${clipId}"]`);
-  if (card) {
-    const thumbWrap = card.querySelector('.frame-thumb');
-    thumbWrap.classList.toggle('portrait', !!clip.is_portrait);
-    const oldThumb = thumbWrap.querySelector('img, canvas');
-    if (oldThumb) oldThumb.replaceWith(thumbEl(clip, 240, 135, bust));
-    let pb = document.getElementById(`portrait-badge-${clipId}`);
-    if (clip.is_portrait || clip.rotation_override) {
-      if (!pb) { pb = document.createElement('div'); pb.id = `portrait-badge-${clipId}`; thumbWrap.appendChild(pb); }
-      pb.className = `portrait-badge${clip.rotation_override ? ' override' : ''}`;
-      pb.textContent = clip.rotation_override ? `+${clip.rotation_override}°` : '↕';
-      pb.title = clip.rotation_override ? `Rotation override: +${clip.rotation_override}°` : 'Portrait';
-    } else if (pb) { pb.remove(); }
-  }
-  // Refresh detail panel if open
-  if (activeDetail === clipId) {
-    const dpWrap = document.getElementById('dp-thumb-wrap');
-    dpWrap.innerHTML = '';
-    dpWrap.classList.toggle('portrait', !!clip.is_portrait);
-    dpWrap.appendChild(thumbEl(clip, 176, 99, bust));
-    const rotBtn = document.getElementById('dp-rotate-btn');
-    if (rotBtn) {
-      const deg = clip.rotation_override || 0;
-      rotBtn.textContent = `⟳ +90° (${deg}° total)`;
-    }
-  }
-}
-
-// ── Category filter sidebar ───────────────────────────────────────────────────
-function buildCatFilter(clips) {
-  const list = document.getElementById('cat-filter-list');
-  list.innerHTML = '';
-
-  const total = clips.length;
-  const groups = {};
-  for (const c of clips) {
-    const cat = c.category || 'other';
-    groups[cat] = (groups[cat] || 0) + 1;
-  }
-
-  const allRow = document.createElement('div');
-  allRow.className = 'cat-row on';
-  allRow.dataset.cat = 'all';
-  allRow.innerHTML = `<span class="cat-pip" style="background:#555"></span>All <span class="cat-n">${total}</span>`;
-  list.appendChild(allRow);
-
-  for (const [cat, n] of Object.entries(groups)) {
-    const row = document.createElement('div');
-    row.className = 'cat-row';
-    row.dataset.cat = cat;
-    const label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    row.innerHTML = `<span class="cat-pip" style="background:${catColor(cat)}"></span>${label} <span class="cat-n">${n}</span>`;
-    list.appendChild(row);
-  }
-
-  list.querySelectorAll('.cat-row').forEach(row => {
-    row.addEventListener('click', () => {
-      list.querySelectorAll('.cat-row').forEach(r => r.classList.remove('on'));
-      row.classList.add('on');
-      _currentLibFilter = row.dataset.cat;
-      filterLibrarySections();
-    });
-  });
-}
-
-function filterLibrarySections() {
-  const sections = document.querySelectorAll('.cat-section');
-  sections.forEach(s => {
-    const catMatch = _currentLibFilter === 'all' || s.dataset.cat === _currentLibFilter;
-    if (!catMatch) {
-      gsap.to(s, { opacity: 0, height: 0, duration: 0.18, ease: 'power2.in', onComplete: () => s.style.display = 'none' });
-      return;
-    }
-    if (_currentSegFilter === 'all') {
-      gsap.to(s, { opacity: 1, height: 'auto', duration: 0.2, display: 'block', ease: 'power2.out' });
-      return;
-    }
-    // Filter cards within section by segment type
-    const cards = s.querySelectorAll('.frame');
-    let anyVisible = false;
-    cards.forEach(card => {
-      const id = card.dataset.id;
-      const clip = CLIP_MAP[id];
-      const has = clip?.segment_types?.includes(_currentSegFilter);
-      card.style.display = has ? '' : 'none';
-      if (has) anyVisible = true;
-    });
-    if (anyVisible) {
-      gsap.to(s, { opacity: 1, height: 'auto', duration: 0.2, display: 'block', ease: 'power2.out' });
-    } else {
-      gsap.to(s, { opacity: 0, height: 0, duration: 0.18, ease: 'power2.in', onComplete: () => s.style.display = 'none' });
-    }
-  });
-}
-
-function buildSegFilter(clips) {
-  const sep = document.getElementById('seg-filter-sep');
-  const list = document.getElementById('seg-filter-list');
-  const types = {};
-  for (const c of clips) {
-    for (const t of (c.segment_types || [])) {
-      types[t] = (types[t] || 0) + 1;
-    }
-  }
-  if (!Object.keys(types).length) { sep.style.display = 'none'; list.innerHTML = ''; return; }
-  sep.style.display = '';
-  const SEG_COLORS = {
-    'Establishing Shot':'#58A6FF','Wide Shot':'#58A6FF',
-    'Hero Moment':'#C9A74A','Golden Hour':'#C9A74A',
-    'Slow Pan':'#00D4CE',
-    'Detail / Texture':'#C264B8','Close-up':'#C264B8',
-    'Action':'#D98C3E','Fast Motion':'#D98C3E',
-    'B-roll':'#7A7D8A','Static':'#7A7D8A',
-    'Nature':'#5DBB8A','Water Shot':'#5DBB8A',
-  };
-  list.innerHTML = '';
-  const allRow = document.createElement('div');
-  allRow.className = 'cat-row' + (_currentSegFilter === 'all' ? ' on' : '');
-  allRow.dataset.seg = 'all';
-  allRow.innerHTML = `<span class="cat-pip" style="background:#555"></span>All shots`;
-  list.appendChild(allRow);
-  for (const [t, n] of Object.entries(types).sort((a,b) => b[1]-a[1])) {
-    const row = document.createElement('div');
-    row.className = 'cat-row' + (_currentSegFilter === t ? ' on' : '');
-    row.dataset.seg = t;
-    row.innerHTML = `<span class="cat-pip" style="background:${SEG_COLORS[t]||'#888'}"></span>${t} <span class="cat-n">${n}</span>`;
-    list.appendChild(row);
-  }
-  list.querySelectorAll('.cat-row').forEach(row => {
-    row.addEventListener('click', () => {
-      list.querySelectorAll('.cat-row').forEach(r => r.classList.remove('on'));
-      row.classList.add('on');
-      _currentSegFilter = row.dataset.seg;
-      filterLibrarySections();
-    });
-  });
-}
-
-// ── Bin filter sidebar ─────────────────────────────────────────────────────────
-function buildBinFilter(clips) {
-  const sep = document.getElementById('bin-filter-sep');
-  const list = document.getElementById('bin-filter-list');
-  const hasBinned = clips.some(c => c.bin_status);
-  if (!hasBinned) { sep.style.display = 'none'; list.innerHTML = ''; return; }
-  sep.style.display = '';
-  list.innerHTML = `<div class="rail-sect-head">Cull status</div>`;
-  const bins = [
-    {k:'all',  label:'All',   pip:'#555'},
-    {k:'keep', label:'Keep',  pip:'#5DBB8A'},
-    {k:'maybe',label:'Maybe', pip:'#C9A74A'},
-    {k:'cut',  label:'Cut',   pip:'var(--bad)'},
-  ];
-  bins.forEach(({k, label, pip}) => {
-    const n = k === 'all' ? clips.length : clips.filter(c => c.bin_status === k).length;
-    const row = document.createElement('div');
-    row.className = 'bin-row' + (_currentBinFilter === k ? ' on' : '');
-    row.dataset.bin = k;
-    row.innerHTML = `<span class="bin-pip" style="background:${pip}"></span>${label} <span class="cat-n">${n}</span>`;
-    row.addEventListener('click', () => {
-      list.querySelectorAll('.bin-row').forEach(r => r.classList.remove('on'));
-      row.classList.add('on');
-      _currentBinFilter = k;
-      buildLibrary(ALL_CLIPS);
-    });
-    list.appendChild(row);
-  });
-}
-
-// ── Collections sidebar ────────────────────────────────────────────────────────
-let _GROUPS = [];
-
-async function loadCollections() {
-  try {
-    const r = await fetch('/api/groups');
-    if (r.ok) { const d = await r.json(); _GROUPS = d.groups || []; }
-  } catch(e) { _GROUPS = []; }
-  renderCollectionsSidebar();
-  if (typeof refreshCollSelect === 'function') refreshCollSelect();
-}
-
-function renderCollectionsSidebar() {
-  const list = document.getElementById('coll-list');
-  list.innerHTML = '';
-  const allRow = document.createElement('div');
-  allRow.className = 'coll-row' + (_currentCollFilter === null ? ' on' : '');
-  allRow.innerHTML = `<span class="coll-icon" style="background:#555"></span>All clips <span class="coll-n">${ALL_CLIPS.length}</span>`;
-  allRow.addEventListener('click', () => { _currentCollFilter = null; _similarMode = false; renderCollectionsSidebar(); buildLibrary(ALL_CLIPS); });
-  list.appendChild(allRow);
-  for (const g of _GROUPS) {
-    const row = document.createElement('div');
-    row.className = 'coll-row' + (_currentCollFilter === g.id ? ' on' : '');
-    row.innerHTML = `<span class="coll-icon" style="background:${catColor('travel')}"></span>${g.name} <span class="coll-n">${g.clip_count||0}</span>`;
-    row.addEventListener('click', () => { _currentCollFilter = g.id; _similarMode = false; renderCollectionsSidebar(); buildLibrary(ALL_CLIPS); });
-    list.appendChild(row);
-  }
-}
-
-async function createCollection(name) {
-  const r = await fetch('/api/groups', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, group_type:'collection'}) });
-  if (r.ok) { await loadCollections(); }
-}
-
-async function addToCollection(clipId, groupId) {
-  await fetch(`/api/groups/${groupId}/clips`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({clip_id: clipId}) });
-  await loadCollections();
-}
-
-// ── Find similar ───────────────────────────────────────────────────────────────
-async function findSimilar(clipId) {
-  _similarMode = true;
-  _currentCollFilter = null;
-  _similarIds.clear();
-  try {
-    const r = await fetch(`/api/clips/similar/${clipId}`);
-    if (r.ok) {
-      const d = await r.json();
-      (d.clips || []).forEach(c => _similarIds.add(c.id));
-    }
-  } catch(e) {}
-  renderCollectionsSidebar();
-  buildLibrary(ALL_CLIPS);
-}
-
-// ── Quality summary ────────────────────────────────────────────────────────────
-function buildQualitySummary(clips) {
-  const hi = clips.filter(c => c.quality_score >= 7).length;
-  const mid = clips.filter(c => c.quality_score >= 5 && c.quality_score < 7).length;
-  const lo = clips.filter(c => c.quality_score < 5).length;
-  const total = clips.length || 1;
-  document.getElementById('qs-hi').style.width = (hi/total*100) + '%';
-  document.getElementById('qs-mid').style.width = (mid/total*100) + '%';
-  document.getElementById('qs-lo').style.width = (lo/total*100) + '%';
-  document.getElementById('qs-hi-n').textContent = hi;
-  document.getElementById('qs-mid-n').textContent = mid;
-  document.getElementById('qs-lo-n').textContent = lo;
-  document.getElementById('quality-summary').style.display = clips.length ? '' : 'none';
-}
-
-// ── Load clips from API ────────────────────────────────────────────────────────
-async function loadClips() {
-  const res = await fetch('/api/clips');
-  const data = await res.json();
-  ALL_CLIPS = data.clips;
-  CLIP_MAP = {};
-  for (const c of ALL_CLIPS) CLIP_MAP[c.id] = c;
-  const usable = ALL_CLIPS.filter(c => c.is_usable).length;
-  document.getElementById('nc-library').textContent = ALL_CLIPS.length;
-  document.getElementById('status-text').textContent = ALL_CLIPS.length
-    ? `${ALL_CLIPS.length} clips · ${usable} usable`
-    : 'Ready';
-  buildLibrary(ALL_CLIPS);
-  buildCatFilter(ALL_CLIPS);
-  buildSegFilter(ALL_CLIPS);
-  buildBinFilter(ALL_CLIPS);
-  buildQualitySummary(ALL_CLIPS);
-  loadCollections();
-}
-
-// ── Detail panel ───────────────────────────────────────────────────────────────
-function openDetail(card, clipId) {
-  const clip = CLIP_MAP[clipId];
-  if (!clip) return;
-
-  document.querySelectorAll('.frame').forEach(f => f.classList.remove('sel'));
-  card.classList.add('sel');
-  activeDetail = clipId;
-
-  const analyzed = !!clip.quality_score;
-
-  document.getElementById('dp-title').textContent = clip.name;
-  document.getElementById('dp-sub').textContent =
-    `${clip.duration_str} · ${clip.res_display || clip.resolution || '—'}`;
-
-  // Unreviewed badge
-  document.getElementById('dp-unreviewed-badge').style.display = analyzed ? 'none' : '';
-
-  // Read-only fields
-  document.getElementById('dp-mood').textContent = clip.mood || '—';
-  document.getElementById('dp-scene').textContent = clip.scene_type || '—';
-  document.getElementById('dp-light').textContent = clip.lighting || '—';
-  document.getElementById('dp-res').textContent = clip.resolution || '—';
-  const noteEl = document.getElementById('dp-note');
-  if (clip.notes) { noteEl.textContent = clip.notes; noteEl.style.display = ''; }
-  else noteEl.style.display = 'none';
-
-  // Quality bar
-  const fill = document.getElementById('dp-qs-fill');
-  const qs = clip.quality_score || 0;
-  const color = qs ? qColor(qs) : 'var(--surface-3)';
-  fill.style.width = (qs * 10) + '%';
-  fill.style.background = color;
-  document.getElementById('dp-qs-score').textContent = qs ? qs + '/10' : '—';
-  document.getElementById('dp-qs-score').style.color = color;
-
-  // Thumbnail
-  const wrap = document.getElementById('dp-thumb-wrap');
-  wrap.innerHTML = '';
-  wrap.classList.toggle('portrait', !!clip.is_portrait);
-  wrap.appendChild(thumbEl(clip, 176, 99));
-
-  // Populate editable fields
-  populateCatSelect(clip.category);
-  const qRange = document.getElementById('dp-quality-range');
-  qRange.value = qs || 5;
-  document.getElementById('dp-quality-display').textContent = (qs || 5) + '/10';
-  const usableToggle = document.getElementById('dp-usable-toggle');
-  usableToggle.classList.toggle('on', clip.is_usable);
-  document.getElementById('dp-usable-label').textContent = clip.is_usable ? 'Usable' : 'Not usable';
-  document.getElementById('dp-notes-input').value = clip.notes || '';
-
-  // Debug panel
-  const debugEl = document.getElementById('dp-debug');
-  if (clip.analysis_tier) {
-    debugEl.style.display = '';
-    const tierLabels = { cv: 'Tier 1 · OpenCV', clip: 'Tier 2 · CLIP', claude: 'Tier 3 · Claude' };
-    const tierEl = document.getElementById('dp-debug-tier');
-    const conf = clip.confidence != null ? ` · ${Math.round(clip.confidence * 100)}% conf` : '';
-    tierEl.textContent = (tierLabels[clip.analysis_tier] || clip.analysis_tier) + conf;
-    const grid = document.getElementById('dp-debug-grid');
-    grid.innerHTML = '';
-    const scores = clip.debug_scores || {};
-    const fmt = v => typeof v === 'number' ? v.toFixed(3) : String(v);
-    const priority = ['blur', 'brightness', 'warm_ratio', 'green_ratio', 'sky_ratio',
-                      'water_ratio', 'edge_density', 'motion', 'motion_type', 'contrast'];
-    const keys = [...priority.filter(k => k in scores),
-                  ...Object.keys(scores).filter(k => !priority.includes(k))];
-    for (const k of keys) {
-      const row = document.createElement('div');
-      row.className = 'dp-debug-row';
-      row.innerHTML = `<span class="dp-debug-key">${k}</span><span class="dp-debug-val">${fmt(scores[k])}</span>`;
-      grid.appendChild(row);
-    }
-  } else {
-    debugEl.style.display = 'none';
-  }
-
-  // Button states
-  document.getElementById('dp-analyze-btn').dataset.id = clipId;
-  document.getElementById('dp-analyze-btn').textContent = analyzed ? 'Re-analyze' : 'Analyze';
-  document.getElementById('dp-tier-status').textContent = '';
-  document.getElementById('dp-tier-status').className = 'dp-tier-status';
-  document.getElementById('dp-save-btn').dataset.id = clipId;
-  document.getElementById('dp-delete-btn').dataset.id = clipId;
-  document.getElementById('dp-breakdown').style.display = 'none';
-  document.getElementById('bk-body').innerHTML = '';
-  // Bin + used state
-  document.getElementById('dp-used-btn').textContent = clip.used_in_edit ? 'Unmark used in edit' : 'Mark as used in edit';
-  const rotBtn = document.getElementById('dp-rotate-btn');
-  const rotDeg = clip.rotation_override || 0;
-  rotBtn.textContent = rotDeg ? `⟳ +90° (${rotDeg}° total)` : '⟳ Rotate 90°';
-  rotBtn.title = rotDeg ? `Extra rotation: ${rotDeg}° — click to add 90° more` : 'Rotate 90° CW (adds to auto-detection)';
-  refreshCollSelect();
-
-  const dp = document.getElementById('dp');
-  if (!_detailOpen) {
-    _detailOpen = true;
-    gsap.to(dp, { x: 0, duration: 0.22, ease: 'power3.out' });
-  }
-}
-
-function populateCatSelect(selected) {
-  const sel = document.getElementById('dp-cat-select');
-  if (sel.options.length === 0) {
-    // Build once; order: base then custom
-    const cats = [...(window._BASE_CATS || []), ...(window._CUSTOM_CATS || [])];
-    cats.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = c.replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
-      sel.appendChild(opt);
-    });
-  }
-  sel.value = selected || 'other';
-}
-
-function closeDetail() {
-  if (!_detailOpen) return;
-  _detailOpen = false;
-  document.querySelectorAll('.frame').forEach(f => f.classList.remove('sel'));
-  activeDetail = null;
-  const dp = document.getElementById('dp');
-  gsap.to(dp, { x: 280, duration: 0.18, ease: 'power2.in' });
-}
-
-document.getElementById('dp-close').addEventListener('click', closeDetail);
-
-// Quality range live display
-document.getElementById('dp-quality-range').addEventListener('input', e => {
-  document.getElementById('dp-quality-display').textContent = e.target.value + '/10';
-});
-
-// Usable toggle
-document.getElementById('dp-usable-toggle').addEventListener('click', function() {
-  this.classList.toggle('on');
-  document.getElementById('dp-usable-label').textContent =
-    this.classList.contains('on') ? 'Usable' : 'Not usable';
-});
-
-// Manual save
-document.getElementById('dp-save-btn').addEventListener('click', async () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  const btn = document.getElementById('dp-save-btn');
-  btn.textContent = 'Saving…';
-  btn.disabled = true;
-  await fetch(`/api/clips/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      category: document.getElementById('dp-cat-select').value,
-      quality_score: parseInt(document.getElementById('dp-quality-range').value),
-      is_usable: document.getElementById('dp-usable-toggle').classList.contains('on'),
-      notes: document.getElementById('dp-notes-input').value.trim() || null,
-    })
-  });
-  await loadClips();
-  const card = document.querySelector(`.frame[data-id="${id}"]`);
-  if (card) openDetail(card, parseInt(id));
-  btn.textContent = 'Saved ✓';
-  setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1500);
-});
-
-// Analyze button — reads mode from the select
-document.getElementById('dp-analyze-btn').addEventListener('click', async () => {
-  const id = document.getElementById('dp-analyze-btn').dataset.id;
-  if (!id) return;
-  const mode = document.getElementById('dp-mode-select').value;
-  await runAnalysis(parseInt(id), document.getElementById('dp-analyze-btn'), mode);
-});
-
-
-// Legacy alias kept for per-card analyze buttons
-async function runClaudeAnalysis(clipId, btn) {
-  await runAnalysis(clipId, btn, 'auto');
-}
-
-const TIER_LABELS = {
-  cv:          'OpenCV',
-  clip:        'CLIP',
-  claude_text: 'Claude text',
-  claude_full: 'Claude full',
-};
-
-async function runAnalysis(clipId, btn, mode) {
-  const origText = btn.textContent;
-  btn.textContent = 'Analyzing…';
-  btn.disabled = true;
-  const statusEl = document.getElementById('dp-tier-status');
-  statusEl.textContent = '';
-  statusEl.className = 'dp-tier-status';
-
-  const res = await fetch(`/api/clips/${clipId}/reanalyze`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode }),
-  });
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value).split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-
-      if (evt.type === 'cv_result') {
-        const pct = Math.round(evt.confidence * 100);
-        statusEl.textContent = `OpenCV: ${pct}% confidence → ${evt.category}`;
-      } else if (evt.type === 'clip_result') {
-        const pct = Math.round(evt.confidence * 100);
-        statusEl.textContent = `CLIP: ${pct}% confidence → ${evt.category}`;
-      } else if (evt.type === 'segmenting') {
-        statusEl.textContent = 'Detecting segments…';
-      } else if (evt.type === 'needs_confirmation') {
-        statusEl.textContent = 'Low confidence on both tiers.';
-        statusEl.className = 'dp-tier-status warn';
-      } else if (evt.type === 'claude_text_fallback') {
-        statusEl.textContent = 'CV + CLIP low confidence → Claude text…';
-        statusEl.className = 'dp-tier-status warn';
-      } else if (evt.type === 'complete') {
-        const tierLabel = TIER_LABELS[evt.tier] || evt.tier;
-        statusEl.textContent = `Done via ${tierLabel}`;
-        statusEl.className = 'dp-tier-status ok';
-        await loadClips();
-        const card = document.querySelector(`.frame[data-id="${clipId}"]`);
-        if (card && activeDetail == clipId) openDetail(card, clipId);
-        if (evt.segments && evt.segments.length && activeDetail == clipId) {
-          document.getElementById('dp-breakdown').style.display = '';
-          renderBreakdown(evt.segments);
-        }
-      } else if (evt.type === 'error') {
-        statusEl.textContent = `Error: ${evt.error}`;
-        statusEl.className = 'dp-tier-status warn';
-      }
-    }
-  }
-  btn.textContent = origText;
-  btn.disabled = false;
-}
-
-document.getElementById('dp-delete-btn').addEventListener('click', async () => {
-  const id = document.getElementById('dp-delete-btn').dataset.id;
-  if (!id) return;
-  const clip = CLIP_MAP[id];
-  if (!confirm(`Delete ${clip?.name || 'this clip'} from the library?`)) return;
-  await fetch(`/api/clips/${id}`, { method: 'DELETE' });
-  closeDetail();
-  await loadClips();
-});
-
-// ── Detail panel extra actions ─────────────────────────────────────────────────
-document.getElementById('dp-rotate-btn').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  rotateClip(parseInt(id));
-});
-
-document.getElementById('dp-similar-btn').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  findSimilar(parseInt(id));
-});
-
-document.getElementById('dp-used-btn').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  toggleUsed(parseInt(id));
-  const clip = CLIP_MAP[id];
-  document.getElementById('dp-used-btn').textContent = clip?.used_in_edit ? 'Unmark used in edit' : 'Mark as used in edit';
-});
-
-['dp-bin-keep','dp-bin-maybe','dp-bin-cut'].forEach(btnId => {
-  document.getElementById(btnId).addEventListener('click', () => {
-    const id = document.getElementById('dp-save-btn').dataset.id;
-    if (!id) return;
-    const status = btnId === 'dp-bin-keep' ? 'keep' : btnId === 'dp-bin-cut' ? 'cut' : 'maybe';
-    setBin(parseInt(id), status);
-    buildBinFilter(ALL_CLIPS);
-  });
-});
-
-document.getElementById('dp-coll-select').addEventListener('change', async function() {
-  const groupId = parseInt(this.value);
-  if (!groupId) return;
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  await addToCollection(parseInt(id), groupId);
-  this.value = '';
-});
-
-function refreshCollSelect() {
-  const sel = document.getElementById('dp-coll-select');
-  sel.innerHTML = '<option value="">Add to collection…</option>';
-  for (const g of _GROUPS) {
-    sel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
-  }
-}
-
-document.getElementById('coll-add-btn').addEventListener('click', async () => {
-  const name = prompt('Collection name:');
-  if (!name?.trim()) return;
-  await createCollection(name.trim());
-  refreshCollSelect();
-});
-
-// ── Breakdown ──────────────────────────────────────────────────────────────────
-const COLOR_MAP = {
-  estab: '#58A6FF', hero: '#C9A74A', pan: '#00D4CE',
-  broll: '#7A7D8A', action: '#D98C3E', close: '#C264B8'
-};
-
-function _fmtTc(s) {
-  const m = Math.floor(s / 60), sec = Math.round(s % 60);
-  return `${m}:${String(sec).padStart(2,'0')}`;
-}
-
-function renderBreakdown(segments) {
-  const total = segments[segments.length - 1]?.end || 1;
-  let activeIdx = -1;
-
-  const barItems = segments.map((seg, i) => {
-    const c = COLOR_MAP[seg.color_key] || '#7A7D8A';
-    const w = ((seg.end - seg.start) / total * 100).toFixed(2);
-    return `<div class="bk-seg" style="--w:${w};--c:${c};flex:${w}" data-idx="${i}" title="${seg.type} ${_fmtTc(seg.start)}–${_fmtTc(seg.end)}"></div>`;
-  }).join('');
-
-  const listItems = segments.map((seg, i) => {
-    const c = COLOR_MAP[seg.color_key] || '#7A7D8A';
-    const motPct = Math.round(seg.motion * 100);
-    return `<div class="bk-item" data-idx="${i}" style="--c:${c}">
-      <div class="bk-row">
-        <div class="bk-dot"></div>
-        <span class="bk-tc">${_fmtTc(seg.start)}–${_fmtTc(seg.end)}</span>
-        <span class="bk-type">${seg.type}</span>
-        <span class="bk-badge">${seg.use}</span>
-        <span class="bk-chevron">›</span>
-      </div>
-      <div class="bk-detail">
-        <div class="bk-detail-grid">
-          <div class="bk-drow"><span class="bk-dlbl">Motion</span>
-            <div class="bk-motion-wrap">
-              <div class="bk-motion-track"><div class="bk-motion-fill" style="width:${motPct}%"></div></div>
-              <span class="bk-dval">${seg.motion_label}</span>
-            </div>
-          </div>
-          <div class="bk-drow"><span class="bk-dlbl">Sharpness</span><span class="bk-dval">${seg.sharpness}</span></div>
-          <div class="bk-drow"><span class="bk-dlbl">Lighting</span><span class="bk-dval">${seg.lighting}</span></div>
-          <div class="bk-drow"><span class="bk-dlbl">Framing</span><span class="bk-dval">${seg.composition}</span></div>
-        </div>
-        <div class="bk-notes">${seg.notes}</div>
-        <div style="display:flex;gap:5px;margin-top:6px">
-          <button class="bk-copy" data-tc="${_fmtTc(seg.start)}–${_fmtTc(seg.end)}" data-type="${seg.type}" data-use="${seg.use}">Copy timecode</button>
-          <button class="bk-copy bk-play-seg" data-start="${seg.start}" style="color:var(--accent);border-color:rgba(201,167,74,.3)">▶ Preview</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const html = `
-    <div class="bk-bar-wrap" id="bk-bar-wrap" data-total="${total}">
-      <div class="bk-bar" id="bk-bar">${barItems}</div>
-      <div class="bk-cursor" id="bk-cursor"></div>
-    </div>
-    <div class="bk-tc-row"><span>${_fmtTc(0)}</span><span>${_fmtTc(total)}</span></div>
-    <div class="bk-list" id="bk-list">${listItems}</div>`;
-
-  document.getElementById('bk-body').innerHTML = html;
-
-  const bar = document.getElementById('bk-bar');
-  const barWrap = document.getElementById('bk-bar-wrap');
-  const cursor = document.getElementById('bk-cursor');
-  const list = document.getElementById('bk-list');
-
-  function activate(idx) {
-    activeIdx = idx;
-    bar.querySelectorAll('.bk-seg').forEach((el, i) => el.classList.toggle('active', i === idx));
-    list.querySelectorAll('.bk-item').forEach((el, i) => el.classList.toggle('active', i === idx));
-  }
-
-  function moveCursorTo(pct) {
-    cursor.style.left = (pct * 100).toFixed(2) + '%';
-    cursor.style.display = 'block';
-  }
-
-  function bkSeek(clientX) {
-    const rect = bar.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const t = pct * total;
-    moveCursorTo(pct);
-    const idx = segments.findIndex((s, i) => t >= s.start && (i === segments.length - 1 || t < segments[i + 1].start));
-    if (idx >= 0) activate(idx);
-    const clipId = document.getElementById('dp-save-btn').dataset.id;
-    if (!clipId) return;
-    if (_pvOpenClipId === clipId) {
-      document.getElementById('pv-video').currentTime = t;
-    } else if (!_bkDragging) {
-      openPreview(clipId, t);
-    }
-  }
-  barWrap._bkSeek = bkSeek;
-  barWrap.addEventListener('mousedown', e => {
-    _bkDragging = true;
-    bkSeek(e.clientX);
-    e.preventDefault();
-  });
-  list.querySelectorAll('.bk-item').forEach(el => {
-    el.addEventListener('click', e => {
-      if (e.target.classList.contains('bk-copy')) return;
-      const idx = +el.dataset.idx;
-      activate(activeIdx === idx ? -1 : idx);
-    });
-  });
-
-  list.querySelectorAll('.bk-copy').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (btn.classList.contains('bk-play-seg')) {
-        const clipId = document.getElementById('dp-save-btn').dataset.id;
-        if (clipId) openPreview(clipId, +btn.dataset.start);
-        return;
-      }
-      const clipName = CLIP_MAP[document.getElementById('dp-save-btn').dataset.id]?.name || '';
-      const text = `${clipName ? clipName + ' · ' : ''}${btn.dataset.tc} | ${btn.dataset.type} · ${btn.dataset.use}`;
-      navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = orig; }, 1400);
-      });
-    });
-  });
-}
-
-async function runBreakdown(clipId) {
-  const panel = document.getElementById('dp-breakdown');
-  const body  = document.getElementById('bk-body');
-  panel.style.display = '';
-  body.innerHTML = '<div class="bk-scanning"><div class="bk-spinner"></div>Scanning segments…</div>';
-
-  const es = new EventSource(`/api/clips/${clipId}/segments`);
-  es.addEventListener('message', e => {
-    const d = JSON.parse(e.data);
-    if (d.type === 'analyzing') {
-      body.innerHTML = `<div class="bk-scanning"><div class="bk-spinner"></div>Scanning segments…</div>`;
-    } else if (d.type === 'complete') {
-      es.close();
-      if (d.segments && d.segments.length) {
-        renderBreakdown(d.segments);
-      } else {
-        body.innerHTML = '<div class="bk-scanning">No segments detected.</div>';
-      }
-    } else if (d.type === 'error') {
-      es.close();
-      body.innerHTML = `<div class="bk-scanning" style="color:var(--bad)">${d.error || 'Analysis failed'}</div>`;
-    }
-  });
-  es.onerror = () => {
-    es.close();
-    body.innerHTML = '<div class="bk-scanning" style="color:var(--bad)">Connection lost.</div>';
-  };
-}
-
-document.getElementById('dp-breakdown-btn').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  runBreakdown(id);
-});
-document.getElementById('bk-rescan').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (!id) return;
-  runBreakdown(id);
-});
-
-// ── Preview modal ──────────────────────────────────────────────────────────────
-const PV_COLOR_MAP = {
-  estab:'#58A6FF', hero:'#C9A74A', pan:'#00D4CE',
-  broll:'#7A7D8A', action:'#D98C3E', close:'#C264B8'
-};
-
-let _pvSegs = [];
-let _pvSpeeds = [1, 1.5, 2, 0.5], _pvSpeedIdx = 0;
-let _pvOpenClipId = null;
-let _bkDragging = false;
-let _pvDragging = false;
-
-function _pvApplyRotation(clip) {
-  const vid = document.getElementById('pv-video');
-  const pvWrap = document.getElementById('pv-video-wrap');
-  const deg = clip.rotation_override || 0;
-  vid.style.transform = deg ? `rotate(${deg}deg)` : '';
-  if (deg === 90 || deg === 270) {
-    const cw = pvWrap.offsetWidth || 640;
-    const ch = pvWrap.offsetHeight || 360;
-    vid.style.maxWidth = ch + 'px';
-    vid.style.maxHeight = cw + 'px';
-  } else {
-    vid.style.maxWidth = '';
-    vid.style.maxHeight = '';
-  }
-}
-
-function _pvTc(s) {
-  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
-  return `${m}:${String(sec).padStart(2, '0')}`;
-}
-
-function _pvSegAt(t) {
-  return _pvSegs.find(s => t >= s.start && t < s.end) || _pvSegs[_pvSegs.length - 1];
-}
-
-function _pvBuildBar(segs, total) {
-  const bar = document.getElementById('pv-tl-bar');
-  bar.innerHTML = '';
-  segs.forEach((seg, i) => {
-    const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
-    const w = ((seg.end - seg.start) / total * 100).toFixed(2);
-    const el = document.createElement('div');
-    el.className = 'pv-tl-seg';
-    el.style.cssText = `--w:${w};--c:${c};flex:${w}`;
-    el.title = `${seg.type} ${_pvTc(seg.start)}–${_pvTc(seg.end)}`;
-    el.addEventListener('click', () => {});
-    bar.appendChild(el);
-  });
-}
-
-function _pvBuildList(segs) {
-  const list = document.getElementById('pvsp-list');
-  list.innerHTML = '';
-  document.getElementById('pvsp-count').textContent = segs.length ? `${segs.length} segments` : '';
-  if (!segs.length) {
-    list.innerHTML = '<div class="pv-no-segs">No segments — run Analyze first</div>';
-    return;
-  }
-  segs.forEach((seg, i) => {
-    const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
-    const el = document.createElement('div');
-    el.className = 'pvsp-item';
-    el.style.setProperty('--c', c);
-    el.innerHTML = `<div class="pvsp-row">
-      <div class="pvsp-now"></div>
-      <div class="pvsp-dot"></div>
-      <span class="pvsp-tc">${_pvTc(seg.start)}–${_pvTc(seg.end)}</span>
-      <span class="pvsp-type">${seg.type}</span>
-      <span class="pvsp-badge">${seg.use}</span>
-    </div>`;
-    el.addEventListener('click', () => { document.getElementById('pv-video').currentTime = seg.start; });
-    list.appendChild(el);
-  });
-}
-
-function _pvSyncUI(t, total) {
-  const pct = total > 0 ? (t / total * 100).toFixed(3) : 0;
-  document.getElementById('pv-playhead').style.left = pct + '%';
-  document.getElementById('pv-tc-cur').textContent = _pvTc(t);
-  document.getElementById('pv-tpt-time').textContent = `${_pvTc(t)} / ${_pvTc(total)}`;
-
-  if (!_pvSegs.length) return;
-  const seg = _pvSegAt(t);
-  const idx = _pvSegs.indexOf(seg);
-  const c = PV_COLOR_MAP[seg.color_key] || '#7A7D8A';
-
-  document.querySelectorAll('.pv-tl-seg').forEach((el, i) => el.classList.toggle('active', i === idx));
-  const items = document.querySelectorAll('.pvsp-item');
-  items.forEach((el, i) => {
-    const wasActive = el.classList.contains('active');
-    el.classList.toggle('active', i === idx);
-    if (i === idx && !wasActive) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  });
-
-  document.getElementById('pvo-dot').style.background = c;
-  document.getElementById('pvo-type').textContent = seg.type;
-  document.getElementById('pvo-use').textContent = `· ${seg.use}`;
-  document.getElementById('pv-seg-overlay').classList.add('show');
-}
-
-async function openPreview(clipId, seekTo = 0) {
-  const clip = CLIP_MAP[clipId];
-  if (!clip) return;
-
-  // Fetch full segment data
-  let segs = [];
-  try {
-    const r = await fetch(`/api/clips/${clipId}/info`);
-    if (r.ok) { const d = await r.json(); segs = d.segments || []; }
-  } catch(e) {}
-  _pvSegs = Array.isArray(segs) ? segs : [];
-
-  const vid = document.getElementById('pv-video');
-  vid.src = `/api/clips/${clipId}/video`;
-  vid.playbackRate = _pvSpeeds[_pvSpeedIdx];
-
-  document.getElementById('pv-title').textContent = clip.name || clip.filename || '';
-  const meta = [];
-  if (clip.resolution) meta.push(clip.resolution);
-  if (clip.fps) meta.push(Math.round(clip.fps) + 'fps');
-  if (clip.duration_seconds) meta.push(_pvTc(clip.duration_seconds));
-  if (clip.category) meta.push(clip.category);
-  document.getElementById('pv-meta').textContent = meta.join(' · ');
-
-  vid.addEventListener('loadedmetadata', () => {
-    const dur = vid.duration || clip.duration_seconds || 0;
-    document.getElementById('pv-tc-dur').textContent = _pvTc(dur);
-    document.getElementById('pv-tpt-time').textContent = `0:00 / ${_pvTc(dur)}`;
-    _pvBuildBar(_pvSegs, dur);
-    _pvBuildList(_pvSegs);
-    if (seekTo > 0) { vid.currentTime = seekTo; }
-    _pvSyncUI(seekTo, dur);
-  }, { once: true });
-
-  vid.addEventListener('timeupdate', () => {
-    _pvSyncUI(vid.currentTime, vid.duration || 0);
-    const bkWrap = document.getElementById('bk-bar-wrap');
-    const bkCursor = document.getElementById('bk-cursor');
-    if (bkWrap && bkCursor) {
-      const bkTotal = parseFloat(bkWrap.dataset.total || 0);
-      if (bkTotal > 0) {
-        const pct = Math.min(1, Math.max(0, vid.currentTime / bkTotal));
-        bkCursor.style.left = (pct * 100).toFixed(2) + '%';
-        bkCursor.style.display = 'block';
-      }
-    }
-  });
-  vid.addEventListener('play', () => { document.getElementById('pv-btn-play').textContent = '⏸'; });
-  vid.addEventListener('pause', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
-  vid.addEventListener('ended', () => { document.getElementById('pv-btn-play').textContent = '▶'; });
-
-  // Drag to scrub preview bar
-  const wrap = document.getElementById('pv-tl-wrap');
-  wrap.onmousedown = e => {
-    _pvDragging = true;
-    const rect = document.getElementById('pv-tl-bar').getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    vid.currentTime = pct * (vid.duration || 0);
-    e.preventDefault();
-  };
-
-  // Apply rotation delta (rotation_override is extra degrees on top of browser's auto-rotate)
-  _pvApplyRotation(clip);
-
-  // Preview rotate button
-  const pvRotBtn = document.getElementById('pv-rotate-btn');
-  pvRotBtn.style.display = '';
-  pvRotBtn.title = `Rotate 90° CW (currently +${clip.rotation_override || 0}°)`;
-  pvRotBtn.onclick = async () => {
-    await rotateClip(clipId);
-    const updated = CLIP_MAP[clipId];
-    _pvApplyRotation(updated);
-    pvRotBtn.title = `Rotate 90° CW (currently +${updated.rotation_override || 0}°)`;
-  };
-
-  _pvOpenClipId = clipId;
-  document.getElementById('pv-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closePreview() {
-  _pvOpenClipId = null;
-  const vid = document.getElementById('pv-video');
-  vid.pause();
-  vid.src = '';
-  vid.style.transform = '';
-  vid.style.maxWidth = '';
-  vid.style.maxHeight = '';
-  const pvRotBtn = document.getElementById('pv-rotate-btn');
-  if (pvRotBtn) { pvRotBtn.style.display = 'none'; pvRotBtn.onclick = null; }
-  document.getElementById('pv-overlay').classList.remove('open');
-  document.getElementById('pv-seg-overlay').classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-document.getElementById('pv-close').addEventListener('click', closePreview);
-document.getElementById('pv-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('pv-overlay')) closePreview();
-});
-
-document.getElementById('pv-btn-play').addEventListener('click', () => {
-  const vid = document.getElementById('pv-video');
-  vid.paused ? vid.play() : vid.pause();
-});
-
-document.getElementById('pv-btn-prev').addEventListener('click', () => {
-  const vid = document.getElementById('pv-video');
-  if (!_pvSegs.length) { vid.currentTime = Math.max(0, vid.currentTime - 10); return; }
-  const cur = _pvSegAt(vid.currentTime);
-  const idx = _pvSegs.indexOf(cur);
-  vid.currentTime = idx > 0 ? _pvSegs[idx - 1].start : 0;
-});
-
-document.getElementById('pv-btn-next').addEventListener('click', () => {
-  const vid = document.getElementById('pv-video');
-  if (!_pvSegs.length) { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); return; }
-  const cur = _pvSegAt(vid.currentTime);
-  const idx = _pvSegs.indexOf(cur);
-  if (idx < _pvSegs.length - 1) vid.currentTime = _pvSegs[idx + 1].start;
-});
-
-document.getElementById('pv-btn-speed').addEventListener('click', () => {
-  _pvSpeedIdx = (_pvSpeedIdx + 1) % _pvSpeeds.length;
-  const vid = document.getElementById('pv-video');
-  vid.playbackRate = _pvSpeeds[_pvSpeedIdx];
-  document.getElementById('pv-btn-speed').textContent = _pvSpeeds[_pvSpeedIdx] + '×';
-});
-
-// Global drag handlers for timeline scrubbing
-document.addEventListener('mousemove', e => {
-  if (_bkDragging) {
-    const bkWrap = document.getElementById('bk-bar-wrap');
-    if (bkWrap?._bkSeek) bkWrap._bkSeek(e.clientX);
-  }
-  if (_pvDragging) {
-    const pvBar = document.getElementById('pv-tl-bar');
-    const pvVid = document.getElementById('pv-video');
-    if (pvBar && pvVid) {
-      const rect = pvBar.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      pvVid.currentTime = pct * (pvVid.duration || 0);
-    }
-  }
-});
-document.addEventListener('mouseup', () => {
-  if (_bkDragging) {
-    // fire openPreview on release if not already open
-    const bkWrap = document.getElementById('bk-bar-wrap');
-    const clipId = document.getElementById('dp-save-btn')?.dataset.id;
-    if (bkWrap?._bkSeek && clipId && _pvOpenClipId !== clipId) {
-      const bkTotal = parseFloat(bkWrap.dataset.total || 0);
-      const cursor = document.getElementById('bk-cursor');
-      if (cursor && bkTotal > 0) {
-        const pct = parseFloat(cursor.style.left) / 100;
-        openPreview(clipId, pct * bkTotal);
-      }
-    }
-  }
-  _bkDragging = false;
-  _pvDragging = false;
-});
-
-document.addEventListener('keydown', e => {
-  if (!document.getElementById('pv-overlay').classList.contains('open')) return;
-  const vid = document.getElementById('pv-video');
-  if (e.code === 'Escape') { closePreview(); return; }
-  if (e.code === 'Space') { e.preventDefault(); vid.paused ? vid.play() : vid.pause(); }
-  if (e.code === 'ArrowLeft')  { e.preventDefault(); vid.currentTime = Math.max(0, vid.currentTime - 5); }
-  if (e.code === 'ArrowRight') { e.preventDefault(); vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 5); }
-});
-
-document.getElementById('dp-preview-btn').addEventListener('click', () => {
-  const id = document.getElementById('dp-save-btn').dataset.id;
-  if (id) openPreview(id);
-});
-
-// ── Navigation ─────────────────────────────────────────────────────────────────
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    const view = item.dataset.view;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-    document.getElementById('v-' + view).classList.add('on');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
-    item.classList.add('on');
-    closeDetail();
-    if (view === 'proposals') loadProposals();
-    if (view === 'trends') loadTrends();
-    if (view === 'grade') loadGrades();
-  });
-});
-
-// Library pill filters (All / Usable / Keep / Cut / Maybe)
-document.querySelectorAll('#v-library .pill-filter').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#v-library .pill-filter').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    const f = btn.dataset.filter;
-    if (f === 'all' || f === 'usable') {
-      _currentUsableFilter = f;
-      _currentBinFilter = 'all';
-    } else {
-      _currentBinFilter = f;
-      _currentUsableFilter = 'all';
-    }
-    _similarMode = false;
-    buildLibrary(ALL_CLIPS);
-    buildCatFilter(ALL_CLIPS.filter(c => _currentUsableFilter === 'usable' ? c.is_usable : true));
-  });
-});
-
-// Sort dropdown
-document.getElementById('sort-select').addEventListener('change', function() {
-  _currentSort = this.value;
-  buildLibrary(ALL_CLIPS);
-});
-
-// View toggle
-document.getElementById('vtb-grid').addEventListener('click', () => {
-  _viewMode = 'grid';
-  document.getElementById('vtb-grid').classList.add('on');
-  document.getElementById('vtb-timeline').classList.remove('on');
-  buildLibrary(ALL_CLIPS);
-});
-document.getElementById('vtb-timeline').addEventListener('click', () => {
-  _viewMode = 'timeline';
-  document.getElementById('vtb-timeline').classList.add('on');
-  document.getElementById('vtb-grid').classList.remove('on');
-  buildLibrary(ALL_CLIPS);
-});
-
-// ── Scan ───────────────────────────────────────────────────────────────────────
-document.getElementById('scan-btn').addEventListener('click', async () => {
-  if (_scanning) return;
-  const folder = document.getElementById('folder-input').value.trim();
-  if (!folder) {
-    document.getElementById('folder-input').focus();
-    return;
-  }
-  _scanning = true;
-  const btn = document.getElementById('scan-btn');
-  const bar = document.getElementById('scan-bar');
-  const fill = document.getElementById('scan-fill');
-  const status = document.getElementById('status-text');
-  const pulse = document.getElementById('pulse-dot');
-
-  btn.disabled = true;
-  btn.textContent = 'Scanning…';
-  bar.classList.add('active');
-  gsap.set(fill, { width: '0%' });
-  pulse.style.background = 'var(--warn)';
-  pulse.style.boxShadow = '0 0 5px var(--warn)';
-
-  // Save folder to localStorage
-  try { localStorage.setItem('footage_folder', folder); } catch(e) {}
-
-  const res = await fetch('/api/scan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ folder })
-  });
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let total = 1;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value).split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      let evt;
-      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-      if (evt.type === 'start') {
-        total = evt.total || 1;
-        status.textContent = `Found ${evt.total} video${evt.total !== 1 ? 's' : ''}…`;
-      } else if (evt.type === 'scanning') {
-        const pct = ((evt.index - 1) / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
-        status.textContent = `Scanning ${evt.file}…`;
-      } else if (evt.type === 'cached') {
-        const pct = (evt.index / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
-        status.textContent = `Cached: ${evt.file}`;
-      } else if (evt.type === 'done') {
-        const pct = (evt.index / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
-        status.textContent = `Done: ${evt.file}`;
-        await loadClips();
-      } else if (evt.type === 'complete') {
-        gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
-          setTimeout(() => {
-            bar.classList.remove('active');
-            gsap.set(fill, { width: '0%' });
-          }, 1200);
-        }});
-        pulse.style.background = 'var(--good)';
-        pulse.style.boxShadow = '0 0 5px var(--good)';
-        await loadClips();
-        const usable = ALL_CLIPS.filter(c => c.is_usable).length;
-        status.textContent = `${ALL_CLIPS.length} clips · ${usable} usable`;
-        btn.disabled = false;
-        btn.textContent = 'Scan';
-        _scanning = false;
-      }
-    }
-  }
-});
-
-// ── Analyze All ───────────────────────────────────────────────────────────────
-let _analyzingAll = false;
-document.getElementById('analyze-all-btn').addEventListener('click', async () => {
-  if (_analyzingAll || _scanning) return;
-  const unreviewed = ALL_CLIPS.filter(c => !c.quality_score);
-  if (!unreviewed.length) {
-    document.getElementById('status-text').textContent = 'All clips already analyzed';
-    return;
-  }
-  _analyzingAll = true;
-  const btn = document.getElementById('analyze-all-btn');
-  const bar = document.getElementById('scan-bar');
-  const fill = document.getElementById('scan-fill');
-  const status = document.getElementById('status-text');
-  const pulse = document.getElementById('pulse-dot');
-
-  btn.disabled = true;
-  btn.textContent = 'Analyzing…';
-  bar.classList.add('active');
-  gsap.set(fill, { width: '0%' });
-  pulse.style.background = 'var(--warn)';
-  pulse.style.boxShadow = '0 0 5px var(--warn)';
-
-  const res = await fetch('/api/clips/analyze-all', { method: 'POST' });
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let total = unreviewed.length;
-  let needsReview = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value).split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      let evt;
-      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-
-      if (evt.type === 'start') {
-        total = evt.total || total;
-        status.textContent = `Analyzing ${evt.total} clip${evt.total !== 1 ? 's' : ''}…`;
-      } else if (evt.type === 'analyzed') {
-        const pct = (evt.done / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
-        status.textContent = `${evt.file} → ${evt.category} (${Math.round(evt.confidence * 100)}%)`;
-        await loadClips();
-      } else if (evt.type === 'low_confidence') {
-        needsReview++;
-        const pct = (evt.done / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
-        status.textContent = `${evt.file} → low confidence, needs review`;
-      } else if (evt.type === 'skipped' || evt.type === 'error') {
-        const pct = (evt.done / total) * 100;
-        gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
-      } else if (evt.type === 'complete') {
-        gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
-          setTimeout(() => { bar.classList.remove('active'); gsap.set(fill, { width: '0%' }); }, 1200);
-        }});
-        pulse.style.background = 'var(--good)';
-        pulse.style.boxShadow = '0 0 5px var(--good)';
-        await loadClips();
-        const msg = needsReview
-          ? `${evt.done - needsReview} analyzed · ${needsReview} need review`
-          : `${evt.done} clips analyzed`;
-        status.textContent = msg;
-        btn.disabled = false;
-        btn.textContent = 'Analyze All';
-        _analyzingAll = false;
-      }
-    }
-  }
-});
-
-// ── Import ────────────────────────────────────────────────────────────────────
-let _importing = false;
-
-async function _streamImport(fetchPromise) {
-  if (_importing || _scanning || _analyzingAll) return;
-  _importing = true;
-  const btn = document.getElementById('import-btn');
-  const bar = document.getElementById('scan-bar');
-  const fill = document.getElementById('scan-fill');
-  const status = document.getElementById('status-text');
-  const pulse = document.getElementById('pulse-dot');
-
-  btn.disabled = true;
-  btn.textContent = 'Importing…';
-  bar.classList.add('active');
-  gsap.set(fill, { width: '0%' });
-  pulse.style.background = 'var(--warn)';
-  pulse.style.boxShadow = '0 0 5px var(--warn)';
-
-  let total = 1;
-  try {
-    const res = await fetchPromise;
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      status.textContent = 'Import failed: ' + (err.detail || res.status);
-      return;
-    }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const lines = decoder.decode(value).split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        let evt;
-        try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-        if (evt.type === 'start') {
-          total = evt.total || 1;
-          status.textContent = `Importing ${evt.total} file${evt.total !== 1 ? 's' : ''}…`;
-        } else if (evt.type === 'done' || evt.type === 'cached') {
-          const pct = (evt.index / total) * 100;
-          gsap.to(fill, { width: pct + '%', duration: 0.4, ease: 'power2.out' });
-          status.textContent = evt.type === 'cached' ? `Already in library: ${evt.file}` : `Imported: ${evt.file}`;
-          await loadClips();
-        } else if (evt.type === 'error') {
-          const pct = (evt.index / total) * 100;
-          gsap.to(fill, { width: pct + '%', duration: 0.3, ease: 'power2.out' });
-          status.textContent = `Error: ${evt.file}`;
-        } else if (evt.type === 'complete') {
-          gsap.to(fill, { width: '100%', duration: 0.3, ease: 'power2.out', onComplete: () => {
-            setTimeout(() => { bar.classList.remove('active'); gsap.set(fill, { width: '0%' }); }, 1200);
-          }});
-          pulse.style.background = 'var(--good)';
-          pulse.style.boxShadow = '0 0 5px var(--good)';
-          await loadClips();
-          const usable = ALL_CLIPS.filter(c => c.is_usable).length;
-          status.textContent = `${ALL_CLIPS.length} clips · ${usable} usable`;
-        }
-      }
-    }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Import';
-    _importing = false;
-  }
-}
-
-// Import button → macOS native file picker (no upload, no copy)
-document.getElementById('import-btn').addEventListener('click', async () => {
-  const status = document.getElementById('status-text');
-  status.textContent = 'Opening file picker…';
-  let pickRes;
-  try {
-    pickRes = await fetch('/api/pick-files');
-  } catch(e) {
-    status.textContent = 'File picker unavailable';
-    return;
-  }
-  if (!pickRes.ok) { status.textContent = 'File picker failed'; return; }
-  const data = await pickRes.json();
-  if (data.cancelled || !data.paths || !data.paths.length) {
-    status.textContent = 'No files selected';
-    return;
-  }
-  await _streamImport(fetch('/api/import-paths', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ paths: data.paths })
-  }));
-});
-
-// Drag-drop: show overlay while dragging over window
-let _dragCounter = 0;
-window.addEventListener('dragenter', e => {
-  if (!e.dataTransfer.types.includes('Files')) return;
-  _dragCounter++;
-  document.getElementById('drop-overlay').classList.add('active');
-  e.preventDefault();
-});
-window.addEventListener('dragleave', () => {
-  _dragCounter--;
-  if (_dragCounter <= 0) {
-    _dragCounter = 0;
-    document.getElementById('drop-overlay').classList.remove('active');
-  }
-});
-window.addEventListener('dragover', e => e.preventDefault());
-window.addEventListener('drop', async e => {
-  e.preventDefault();
-  _dragCounter = 0;
-  document.getElementById('drop-overlay').classList.remove('active');
-  const files = Array.from(e.dataTransfer.files).filter(f =>
-    ['.mp4','.mov','.avi','.mkv'].includes(f.name.slice(f.name.lastIndexOf('.')).toLowerCase())
-  );
-  if (!files.length) return;
-  const form = new FormData();
-  for (const f of files) form.append('files', f);
-  await _streamImport(fetch('/api/import-upload', { method: 'POST', body: form }));
-});
-
-// ── Debug panel toggle ────────────────────────────────────────────────────────
-document.getElementById('dp-debug-toggle').addEventListener('click', () => {
-  const body = document.getElementById('dp-debug-body');
-  const arrow = document.getElementById('dp-debug-arrow');
-  const open = body.classList.toggle('open');
-  arrow.textContent = open ? '▾' : '▸';
-});
-
-// ── Export ────────────────────────────────────────────────────────────────────
-document.getElementById('export-btn').addEventListener('click', () => {
-  window.location.href = '/api/export?format=csv';
-});
-document.getElementById('shotlist-btn').addEventListener('click', () => {
-  window.location.href = '/api/export/shotlist';
-});
-
-// ── Reset all analysis ────────────────────────────────────────────────────────
-document.getElementById('reset-btn').addEventListener('click', async () => {
-  const count = ALL_CLIPS.filter(c => c.quality_score).length;
-  if (!count) { document.getElementById('status-text').textContent = 'Nothing to reset'; return; }
-  if (!confirm(`Clear analysis results for all ${count} analyzed clip${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
-  const res = await fetch('/api/clips/reset-analysis', { method: 'POST' });
-  if (res.ok) {
-    await loadClips();
-    document.getElementById('status-text').textContent = `Reset ${count} clips`;
-  }
-});
-
-// ── Proposals ─────────────────────────────────────────────────────────────────
-async function loadProposals() {
-  const res = await fetch('/api/proposals');
-  const data = await res.json();
-  const props = data.proposals || [];
-  document.getElementById('nc-proposals').textContent = props.length;
-  renderProposals(props);
-}
-
-function renderProposals(props) {
-  const grid = document.getElementById('proposals-grid');
-  grid.innerHTML = '';
-
-  const platFilter = document.querySelector('#v-proposals .pill-filter.on')?.dataset.plat || 'all';
-  const filtered = platFilter === 'all' ? props : props.filter(p => p.platform === platFilter || (platFilter === 'youtube' && p.platform === 'youtube-shorts'));
-
-  if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-title">No proposals yet</div>
-      <div class="empty-sub">Click Propose to generate social media video ideas from your clips.</div>
-    </div>`;
-    return;
-  }
-
-  for (const p of filtered) {
-    const card = buildProposalCard(p);
-    grid.appendChild(card);
-  }
-
-  gsap.from(grid.querySelectorAll('.prop-card'), { opacity: 0, y: 10, duration: 0.3, stagger: 0.06, ease: 'power2.out', clearProps: 'all' });
-}
-
-function buildProposalCard(p) {
-  const card = document.createElement('div');
-  card.className = 'prop-card';
-  card.dataset.id = p.id;
-  card.dataset.platform = p.platform;
-
-  // storyboard strips
-  const sbFrames = p.clip_ids.slice(0, 4).map(cid => {
-    const clip = CLIP_MAP[cid];
-    const frame = document.createElement('div');
-    frame.className = 'prop-sb-frame';
-    if (clip) {
-      const img = document.createElement('img');
-      img.src = `/api/clips/${cid}/thumb`;
-      img.loading = 'lazy';
-      img.onerror = () => img.style.display = 'none';
-      frame.appendChild(img);
-    }
-    return frame.outerHTML;
-  }).join('');
-  const sbMore = p.clip_ids.length > 4
-    ? `<div class="prop-sb-more">+${p.clip_ids.length - 4}</div>` : '';
-
-  const savedClass = p.status === 'saved' ? 'saved' : '';
-  const savedLabel = p.status === 'saved' ? 'Saved' : 'Save';
-  const hashtagStr = (p.hashtags || []).join(' ');
-
-  card.innerHTML = `
-    <div class="prop-header">
-      ${platBadge(p.platform)}
-      <div class="prop-title">${p.title || '—'}</div>
-    </div>
-    <div class="prop-dur">${p.estimated_duration || ''} · ${p.vibe || ''}</div>
-    <div class="prop-hook">"${p.hook_text || ''}"</div>
-    <div class="prop-storyboard">${sbFrames}${sbMore}</div>
-    <div class="prop-actions">
-      <button class="prop-btn ${savedClass}" data-action="save">${savedLabel}</button>
-      <button class="prop-btn" data-action="caption">Caption</button>
-      <button class="prop-btn" data-action="dismiss">Dismiss</button>
-    </div>`;
-
-  card.querySelector('[data-action="save"]').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    const isSaved = btn.classList.contains('saved');
-    const newStatus = isSaved ? 'active' : 'saved';
-    await fetch(`/api/proposals/${p.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    });
-    btn.classList.toggle('saved', !isSaved);
-    btn.textContent = isSaved ? 'Save' : 'Saved';
-  });
-
-  card.querySelector('[data-action="caption"]').addEventListener('click', () => {
-    openCaption(p.title, p.caption, hashtagStr);
-  });
-
-  card.querySelector('[data-action="dismiss"]').addEventListener('click', async () => {
-    await fetch(`/api/proposals/${p.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'dismissed' })
-    });
-    gsap.to(card, {
-      opacity: 0, height: 0, padding: 0, margin: 0, borderWidth: 0,
-      duration: 0.3, ease: 'power2.in', onComplete: () => card.remove()
-    });
-  });
-
-  return card;
-}
-
-// Proposals platform filter
-document.querySelectorAll('#v-proposals .pill-filter').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    document.querySelectorAll('#v-proposals .pill-filter').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    const res = await fetch('/api/proposals');
-    const data = await res.json();
-    renderProposals(data.proposals || []);
-  });
-});
-
-// Propose button
-document.getElementById('propose-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('propose-btn');
-  btn.disabled = true;
-  btn.textContent = 'Generating…';
-  document.getElementById('status-text').textContent = 'Generating proposals…';
-
-  const res = await fetch('/api/proposals/generate', { method: 'POST' });
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value).split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      let evt;
-      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-      if (evt.type === 'complete') {
-        await loadProposals();
-        document.getElementById('status-text').textContent = `${ALL_CLIPS.length} clips · ${ALL_CLIPS.filter(c=>c.is_usable).length} usable`;
-      }
-    }
-  }
-  btn.disabled = false;
-  btn.textContent = 'Propose';
-});
-
-// ── Caption modal ──────────────────────────────────────────────────────────────
-function openCaption(title, body, tags) {
-  _captionFull = body || '';
-  document.getElementById('modal-title').textContent = title || 'Caption';
-  document.getElementById('modal-caption').textContent = body || '';
-  const hrow = document.getElementById('modal-hashtags');
-  hrow.innerHTML = '';
-  (tags || '').split(/\s+/).filter(Boolean).forEach(t => {
-    const span = document.createElement('span');
-    span.className = 'htag';
-    span.textContent = '#' + t.replace(/^#/, '');
-    hrow.appendChild(span);
-  });
-  const copyBtn = document.getElementById('copy-btn');
-  copyBtn.textContent = 'Copy caption';
-  copyBtn.className = 'modal-btn primary';
-  const overlay = document.getElementById('caption-modal');
-  gsap.set(overlay, { display: 'flex' });
-  gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'power2.out' });
-  overlay.classList.add('open');
-}
-
-function closeCaption() {
-  const overlay = document.getElementById('caption-modal');
-  gsap.to(overlay, { opacity: 0, duration: 0.12, ease: 'power2.in', onComplete: () => {
-    overlay.classList.remove('open');
-    gsap.set(overlay, { display: 'none' });
-  }});
-}
-
-document.getElementById('modal-close').addEventListener('click', closeCaption);
-document.getElementById('modal-close-btn').addEventListener('click', closeCaption);
-document.getElementById('caption-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCaption(); });
-
-document.getElementById('copy-btn').addEventListener('click', () => {
-  const btn = document.getElementById('copy-btn');
-  const tags = Array.from(document.getElementById('modal-hashtags').querySelectorAll('.htag')).map(h => h.textContent).join(' ');
-  const full = _captionFull + '\n\n' + tags;
-  navigator.clipboard.writeText(full).then(() => {
-    btn.textContent = '✓ Copied';
-    btn.className = 'modal-btn success';
-    setTimeout(() => { btn.textContent = 'Copy caption'; btn.className = 'modal-btn primary'; }, 2000);
-  }).catch(() => {
-    btn.textContent = '✓ Copied';
-    btn.className = 'modal-btn success';
-    setTimeout(() => { btn.textContent = 'Copy caption'; btn.className = 'modal-btn primary'; }, 2000);
-  });
-});
-
-// ── Trends ─────────────────────────────────────────────────────────────────────
-async function loadTrends() {
-  const res = await fetch('/api/trends');
-  const data = await res.json();
-  const trends = data.trends || [];
-  const age = data.age;
-  document.getElementById('nc-trends').textContent = trends.length;
-  const ageEl = document.getElementById('trends-age');
-  ageEl.textContent = age ? `Updated ${age}` : '';
-  renderTrends(trends);
-}
-
-function renderTrends(trends) {
-  const content = document.getElementById('trends-content');
-  content.innerHTML = '';
-  if (trends.length === 0) {
-    content.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-title">No trends cached</div>
-      <div class="empty-sub">Click "Fetch latest" to search for current social media trends.</div>
-    </div>`;
-    return;
-  }
-
-  const formats = trends.filter(t => ['format','hook'].includes(t.category));
-  const sounds = trends.filter(t => ['sound','effect'].includes(t.category));
-  const rest = trends.filter(t => !['format','hook','sound','effect'].includes(t.category));
-
-  const col1 = document.createElement('div');
-  const col2 = document.createElement('div');
-  col1.innerHTML = '<div class="trend-col-title">Formats & Hooks</div>';
-  col2.innerHTML = '<div class="trend-col-title">Sounds & Effects</div>';
-
-  const platColor = (p) => ({ tiktok:'var(--tt)', reels:'var(--ig)', 'youtube-shorts':'var(--yt)', all:'var(--text-3)' })[p] || 'var(--text-3)';
-  const popClass = (pop) => ({ trending:'hot', rising:'rising', established:'stable' })[pop] || 'stable';
-  const popLabel = (pop) => ({ trending:'🔥 trending', rising:'↑ rising', established:'● established' })[pop] || pop;
-
-  const trendCard = (t) => `
-    <div class="trend-card">
-      <div class="trend-card-name">
-        <span class="trend-plat-dot" style="background:${platColor(t.platform)}"></span>
-        ${t.name || ''}
-        <span class="trend-pop ${popClass(t.popularity)}">${popLabel(t.popularity)}</span>
-      </div>
-      <div class="trend-desc">${t.description || ''}</div>
-      ${t.relevance_to_travel ? `<div class="trend-apply">→ ${t.relevance_to_travel}</div>` : ''}
-      ${t.view_indicator ? `<div class="trend-views">${t.view_indicator}</div>` : ''}
-    </div>`;
-
-  [...formats, ...rest.slice(0, 3)].forEach(t => col1.innerHTML += trendCard(t));
-  [...sounds, ...rest.slice(3)].forEach(t => col2.innerHTML += trendCard(t));
-  content.appendChild(col1);
-  content.appendChild(col2);
-
-  gsap.from(content.querySelectorAll('.trend-card'), { opacity: 0, y: 6, duration: 0.3, stagger: 0.04, ease: 'power2.out', clearProps: 'all' });
-}
-
-document.getElementById('fetch-trends-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('fetch-trends-btn');
-  btn.textContent = 'Fetching…';
-  btn.disabled = true;
-  const res = await fetch('/api/trends/fetch', { method: 'POST' });
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value).split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      let evt;
-      try { evt = JSON.parse(line.slice(5).trim()); } catch(e) { continue; }
-      if (evt.type === 'complete') await loadTrends();
-    }
-  }
-  btn.textContent = 'Fetch latest';
-  btn.disabled = false;
-});
-
-// ── Theme ──────────────────────────────────────────────────────────────────────
-document.getElementById('theme-btn').addEventListener('click', () => {
-  const r = document.documentElement;
-  const c = r.getAttribute('data-theme');
-  r.setAttribute('data-theme', c === 'light' ? '' : 'light');
-  try { localStorage.setItem('footage_theme', r.getAttribute('data-theme')); } catch(e) {}
-});
-
-// ── Keyboard ───────────────────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeDetail(); closeCaption(); }
-});
-
-// ── Init ───────────────────────────────────────────────────────────────────────
-// Set detail panel off-screen without transition flash
-gsap.set('#dp', { x: 280 });
-// Hide caption modal
-gsap.set('#caption-modal', { display: 'none', opacity: 0 });
-
-// Restore theme
-try {
-  const t = localStorage.getItem('footage_theme');
-  if (t) document.documentElement.setAttribute('data-theme', t);
-} catch(e) {}
-
-// Restore folder
-try {
-  const f = localStorage.getItem('footage_folder');
-  if (f) document.getElementById('folder-input').value = f;
-} catch(e) {}
-
-// ── Quick review mode ──────────────────────────────────────────────────────────
-let _revClips = [];
-let _revIdx = 0;
-
-function openReview() {
-  _revClips = ALL_CLIPS.filter(c => c.quality_score); // analyzed only
-  if (!_revClips.length) { alert('No analyzed clips to review.'); return; }
-  _revIdx = 0;
-  document.getElementById('review-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  renderRevCard();
-}
-
-function closeReview() {
-  document.getElementById('review-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function renderRevCard() {
-  if (!_revClips.length) return;
-  const clip = _revClips[_revIdx];
-  document.getElementById('rev-name').textContent = clip.name;
-  document.getElementById('rev-counter').textContent = `${_revIdx + 1} of ${_revClips.length}`;
-  document.getElementById('rev-progress-fill').style.width = ((_revIdx + 1) / _revClips.length * 100).toFixed(1) + '%';
-  const thumb = document.getElementById('rev-thumb');
-  thumb.innerHTML = '';
-  thumb.appendChild(thumbEl(clip, 840, 472));
-  document.getElementById('rev-tags').innerHTML = `
-    <span class="tag" style="${catTagStyle(clip.category)}">${clip.category}</span>
-    ${clip.mood ? `<span class="tag" style="background:rgba(168,171,186,.1);color:var(--text-3)">${clip.mood}</span>` : ''}
-    ${clip.lighting ? `<span class="tag" style="background:rgba(168,171,186,.08);color:var(--text-3)">${clip.lighting}</span>` : ''}
-    <span class="tag" style="background:rgba(168,171,186,.08);color:${qColor(clip.quality_score)}">Q${clip.quality_score}</span>
-    ${clip.bin_status ? `<span class="tag bin-badge ${clip.bin_status}" style="position:static;pointer-events:auto">${clip.bin_status.toUpperCase()}</span>` : ''}
-  `;
-  ['keep','maybe','cut'].forEach(k => {
-    document.getElementById(`rev-${k}`).classList.toggle('active', clip.bin_status === k);
-  });
-}
-
-function revNav(delta) {
-  _revIdx = Math.max(0, Math.min(_revClips.length - 1, _revIdx + delta));
-  renderRevCard();
-}
-
-async function revBin(status) {
-  if (!_revClips.length) return;
-  const clip = _revClips[_revIdx];
-  await setBin(clip.id, status);
-  buildBinFilter(ALL_CLIPS);
-  renderRevCard();
-  setTimeout(() => revNav(1), 300); // auto-advance
-}
-
-document.getElementById('review-btn').addEventListener('click', openReview);
-document.getElementById('rev-close').addEventListener('click', closeReview);
-document.getElementById('rev-prev').addEventListener('click', () => revNav(-1));
-document.getElementById('rev-next').addEventListener('click', () => revNav(1));
-document.getElementById('rev-keep').addEventListener('click', () => revBin('keep'));
-document.getElementById('rev-maybe').addEventListener('click', () => revBin('maybe'));
-document.getElementById('rev-cut').addEventListener('click', () => revBin('cut'));
-
-document.addEventListener('keydown', e => {
-  if (!document.getElementById('review-overlay').classList.contains('open')) return;
-  if (e.key === 'Escape') { closeReview(); return; }
-  if (e.key === 'ArrowLeft')  { revNav(-1); return; }
-  if (e.key === 'ArrowRight') { revNav(1);  return; }
-  const k = e.key.toLowerCase();
-  if (k === 'k') { revBin('keep');  return; }
-  if (k === 'x') { revBin('cut');   return; }
-  if (k === 'm') { revBin('maybe'); return; }
-  if (k === ' ') {
-    e.preventDefault();
-    const clip = _revClips[_revIdx];
-    if (clip) openPreview(clip.id);
-  }
-}, true);
-
-// K/X/M shortcuts when hovering a card (outside review mode)
-document.addEventListener('keydown', e => {
-  if (document.getElementById('review-overlay').classList.contains('open')) return;
-  if (document.getElementById('pv-overlay').classList.contains('open')) return;
-  if (!_hoveredClipId) return;
-  const k = e.key.toLowerCase();
-  if (k === 'k') setBin(_hoveredClipId, 'keep');
-  else if (k === 'x') setBin(_hoveredClipId, 'cut');
-  else if (k === 'm') setBin(_hoveredClipId, 'maybe');
-});
-
-// Load categories then clips
-(async () => {
-  try {
-    const res = await fetch('/api/categories');
-    const data = await res.json();
-    window._BASE_CATS = data.base || [];
-    window._CUSTOM_CATS = (data.custom || []).map(c => c.name);
-  } catch(e) {
-    window._BASE_CATS = ['travel','b-roll','portrait','action','golden-hour','food','architecture','nature','other'];
-    window._CUSTOM_CATS = [];
-  }
-  loadClips();
+// Grain
+(function(){
+  const c=document.getElementById('grain'),ctx=c.getContext('2d');let w,h,f=0;
+  function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+  window.addEventListener('resize',resize);resize();
+  (function tick(){if(++f%3===0){const img=ctx.createImageData(w,h),px=img.data;for(let i=0;i<px.length;i+=4){const v=(Math.random()*255)|0;px[i]=px[i+1]=px[i+2]=v;px[i+3]=255;}ctx.putImageData(img,0,0);}requestAnimationFrame(tick);})();
 })();
 
-// ── Color Grade ───────────────────────────────────────────────────────────────
-let _activeGrade = null;
-let _gradePreviewClipId = null;
+// Mock clips
+const CLIPS=[
+  {name:'golden_hour_01.mp4',dur:'0:23',bg:'#0D0A04',e:'🌅',q:'#22D3BB'},
+  {name:'mountain_wide.mov', dur:'0:41',bg:'#04090D',e:'🏔',q:'#22D3BB'},
+  {name:'urban_broll_04.mp4',dur:'0:18',bg:'#05060D',e:'🏙',q:'#FBBF24'},
+  {name:'portrait_cafe.mov', dur:'1:02',bg:'#0A0506',e:'☕',q:'#22D3BB'},
+  {name:'water_reflect.mp4', dur:'0:35',bg:'#04070D',e:'💧',q:'#FBBF24'},
+  {name:'action_trail.mov',  dur:'0:09',bg:'#0D0502',e:'🚵',q:'#F87171'},
+];
+const wg=document.getElementById('win-grid');
+CLIPS.forEach(c=>{
+  const el=document.createElement('div');el.className='win-card';
+  el.innerHTML=`<div class="win-thumb" style="background:${c.bg}"><div style="opacity:.22">${c.e}</div><div class="win-q" style="background:${c.q}"></div><div class="win-dur">${c.dur}</div></div><div class="win-meta"><div class="win-name">${c.name}</div><div class="win-tags"><span class="win-tag">cinematic</span></div></div>`;
+  wg.appendChild(el);
+});
+gsap.from('#app-win',{opacity:0,x:22,duration:.7,ease:'power3.out',delay:.15});
+gsap.from('.hero>div:first-child>*',{opacity:0,y:16,duration:.55,stagger:.1,ease:'power3.out'});
+gsap.from('#win-grid .win-card',{opacity:0,y:8,scale:.97,duration:.35,stagger:.06,ease:'power3.out',delay:.4});
 
-async function loadGrades() {
-  const res = await fetch('/api/grades');
-  if (!res.ok) return;
-  const { grades } = await res.json();
-  renderGradeList(grades);
-}
+// Stats
+function countUp(el,n,ms){let s;(function step(ts){if(!s)s=ts;const p=Math.min((ts-s)/ms,1),e=1-Math.pow(1-p,3);el.textContent=Math.round(e*n);if(p<1)requestAnimationFrame(step);})(performance.now());}
+const STATS=[{n:3,l:'Analysis tiers'},{n:2,l:'Grade formats'},{n:7,l:'Sound effects'},{n:10,l:'Animations'},{n:4,l:'Rotation modes'}];
+const sg=document.getElementById('stats-grid');
+STATS.forEach(s=>{const el=document.createElement('div');el.className='stat reveal-child';el.innerHTML=`<div class="stat-n" data-n="${s.n}">0</div><div class="stat-label">${s.l}</div>`;sg.appendChild(el);});
 
-function renderGradeList(grades) {
-  const list = document.getElementById('grade-list');
-  const empty = document.getElementById('grade-empty');
-  list.innerHTML = '';
-  empty.style.display = grades.length ? 'none' : '';
-  grades.forEach(g => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;border:1px solid transparent;font-size:12px;transition:background .1s,border-color .1s';
-    row.dataset.name = g.name;
-    if (_activeGrade === g.name) row.style.borderColor = 'var(--accent)';
-    row.innerHTML = `
-      <span style="font-size:10px;color:var(--text-3);font-variant:small-caps">${g.type}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.name}</span>
-      <span class="grade-del" data-name="${g.name}" style="color:var(--text-3);font-size:10px;cursor:pointer;flex-shrink:0" title="Delete">✕</span>`;
-    row.addEventListener('click', e => {
-      if (e.target.classList.contains('grade-del')) return;
-      _activeGrade = g.name;
-      renderGradeList(grades);
-      if (_gradePreviewClipId) applyGradePreview(_gradePreviewClipId);
-      else {
-        document.getElementById('grade-clip-hint').style.display = '';
-        document.getElementById('grade-clip-hint').textContent = 'Now click any clip in the library to preview this grade';
-      }
-    });
-    row.querySelector('.grade-del').addEventListener('click', async () => {
-      await fetch(`/api/grades/${encodeURIComponent(g.name)}`, { method: 'DELETE' });
-      if (_activeGrade === g.name) { _activeGrade = null; _gradePreviewClipId = null; hideGradePreview(); }
-      loadGrades();
-    });
-    list.appendChild(row);
-  });
-}
 
-function hideGradePreview() {
-  document.getElementById('grade-preview-wrap').style.display = 'none';
-  document.getElementById('grade-clip-hint').style.display = '';
-}
+// Features
+const FEATS=[
+  {i:'▦',t:'Clip Library',    d:'Scan any folder. Three-tier analysis: OpenCV → CLIP → Claude. SQLite WAL mode.',b:'core',bc:'bt'},
+  {i:'◐',t:'Color Grade',     d:'Upload .drx or .cube LUTs. ASC CDL → 33³ cube → ffmpeg lut3d. Side-by-side preview.',b:'new',bc:'ba'},
+  {i:'⟳',t:'Rotation',        d:'Per-clip rotation delta (0/90/180/270°). Thumbnail regenerates with cache-busting.',b:'new',bc:'ba'},
+  {i:'♪',t:'Sound Effects',   d:'Web Audio API synthesis — 7 sounds, zero files. Click, open, complete, film tick.',b:'new',bc:'ba'},
+  {i:'◑',t:'Film Grain',      d:'Full-screen canvas noise at 20fps, opacity .016, mix-blend-mode: screen.',b:'new',bc:'ba'},
+  {i:'✦',t:'AI Proposals',    d:'Claude generates social media ideas — hook, caption, hashtags, platform.',b:'core',bc:'bt'},
+  {i:'↕',t:'Bin & Cull',      d:'Keep / Cut / Maybe per clip. Used-in-edit flag. Rapid keyboard culling.',b:'core',bc:'bt'},
+  {i:'∿',t:'Segment Timeline',d:'Per-clip motion breakdown. Color-coded quality. Spring-animated scrub playhead.',b:'core',bc:'bt'},
+  {i:'▶',t:'Preview Modal',   d:'Full video with transport, speed toggle, segment overlay. GSAP scale+fade open/close.',b:'core',bc:'bt'},
+  {i:'⊡',t:'Collections',     d:'Group clips. Claude analyzes sequence arc, edit notes, transition suggestions.',b:'core',bc:'bt'},
+];
+const fg=document.getElementById('feat-grid');
+FEATS.forEach(f=>{const el=document.createElement('div');el.className='feat-card reveal-child';el.innerHTML=`<div class="feat-icon">${f.i}</div><div class="feat-title">${f.t}</div><div class="feat-desc">${f.d}</div><span class="feat-badge ${f.bc}">${f.b}</span>`;fg.appendChild(el);});
 
-async function applyGradePreview(clipId) {
-  if (!_activeGrade) return;
-  _gradePreviewClipId = clipId;
-  const clip = CLIP_MAP[clipId];
-  if (!clip) return;
 
-  document.getElementById('grade-clip-hint').style.display = 'none';
-  document.getElementById('grade-preview-wrap').style.display = '';
-  document.getElementById('grade-preview-label').textContent = clip.filename || clip.name || '';
-  document.getElementById('grade-graded-label').textContent = _activeGrade;
+// Audio
+let sfxCtx=null;
+function ac(){if(!sfxCtx)sfxCtx=new(window.AudioContext||window.webkitAudioContext)();if(sfxCtx.state==='suspended')sfxCtx.resume();return sfxCtx;}
+const SND={
+  click:{l:'Button click',h:'Any button press',f(){const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(900,c.currentTime);o.frequency.exponentialRampToValueAtTime(400,c.currentTime+.04);g.gain.setValueAtTime(.1,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.05);o.start();o.stop(c.currentTime+.06);}},
+  select:{l:'Card select',h:'Clip card click',f(){const c=ac(),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=1200;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.07,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.08);o.start();o.stop(c.currentTime+.09);}},
+  open:{l:'Modal open',h:'Preview panels',f(){const c=ac(),n=c.sampleRate*.12,buf=c.createBuffer(1,n,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(i/n);const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;f.type='highpass';f.frequency.setValueAtTime(200,c.currentTime);f.frequency.exponentialRampToValueAtTime(3000,c.currentTime+.12);g.gain.setValueAtTime(.15,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.12);src.connect(f);f.connect(g);g.connect(c.destination);src.start();}},
+  close:{l:'Modal close',h:'Dismiss panels',f(){const c=ac(),n=c.sampleRate*.1,buf=c.createBuffer(1,n,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;f.type='highpass';f.frequency.setValueAtTime(2000,c.currentTime);f.frequency.exponentialRampToValueAtTime(150,c.currentTime+.1);g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.1);src.connect(f);f.connect(g);g.connect(c.destination);src.start();}},
+  complete:{l:'Scan complete',h:'C5 + E5 chime',f(){const c=ac();[[523.25,0],[659.25,.08]].forEach(([freq,delay])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(c.destination);const t=c.currentTime+delay;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.start(t);o.stop(t+.55);});}},
+  film_tick:{l:'Film tick',h:'Library build',f(){const c=ac(),n=Math.floor(c.sampleRate*.015),buf=c.createBuffer(1,n,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++){const e=1-i/n;d[i]=(Math.random()*2-1)*e*e;}const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;f.type='bandpass';f.frequency.value=2400;f.Q.value=.8;g.gain.value=.18;src.connect(f);f.connect(g);g.connect(c.destination);src.start();}},
+  error:{l:'Error',h:'Sawtooth drop',f(){const c=ac(),o=c.createOscillator(),g=c.createGain();o.type='sawtooth';o.frequency.setValueAtTime(220,c.currentTime);o.frequency.exponentialRampToValueAtTime(110,c.currentTime+.15);g.gain.setValueAtTime(.07,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.18);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.2);}},
+};
+const sndg=document.getElementById('snd-grid');
+Object.entries(SND).forEach(([k,{l,h,f}])=>{
+  const el=document.createElement('div');el.className='snd-card reveal-child';
+  el.innerHTML=`<div class="snd-btn">▶</div><div><div class="snd-name">${l}</div><div class="snd-hint">${h}</div></div>`;
+  el.addEventListener('click',()=>{el.classList.add('playing');f();setTimeout(()=>el.classList.remove('playing'),420);});
+  sndg.appendChild(el);
+});
+document.getElementById('demo-btn').addEventListener('click',()=>['open','film_tick','select','click','complete'].forEach((k,i)=>setTimeout(()=>SND[k].f(),i*190)));
 
-  // Original thumb (cache-busted not needed here)
-  const origImg = document.getElementById('grade-orig-img');
-  origImg.src = `/api/clips/${clipId}/thumb?t=${Date.now()}`;
-
-  // Graded
-  const gradedImg = document.getElementById('grade-graded-img');
-  const loadingEl = document.getElementById('grade-loading');
-  gradedImg.style.opacity = '0.4';
-  loadingEl.style.display = 'flex';
-  gradedImg.src = `/api/clips/${clipId}/grade-preview?grade=${encodeURIComponent(_activeGrade)}&t=${Date.now()}`;
-  gradedImg.onload = () => { gradedImg.style.opacity = '1'; loadingEl.style.display = 'none'; };
-  gradedImg.onerror = () => { gradedImg.style.opacity = '1'; loadingEl.style.display = 'none'; };
-}
-
-// Upload handler
-document.getElementById('grade-upload-input').addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const fd = new FormData();
-  fd.append('file', file);
-  const res = await fetch('/api/grades/upload', { method: 'POST', body: fd });
-  e.target.value = '';
-  if (res.ok) {
-    const data = await res.json();
-    _activeGrade = data.name;
-    loadGrades();
-  }
+// Grade
+const GRADES=[
+  {name:'FilmLook',ext:'.drx',  fb:'#100C06',fe:'🎬',tb:'#0A1508',tf:'sepia(.4) hue-rotate(-10deg) saturate(1.4)',te:'🎨'},
+  {name:'ColdBlue',ext:'.cube', fb:'#06080F',fe:'🎬',tb:'#04060F',tf:'hue-rotate(190deg) saturate(1.3) brightness(.85)',te:'🎨'},
+  {name:'GoldenHour',ext:'.drx',fb:'#0F0804',fe:'🎬',tb:'#140800',tf:'sepia(.6) saturate(1.5) hue-rotate(-15deg)',te:'🎨'},
+];
+const gg=document.getElementById('grade-grid');
+GRADES.forEach(g=>{
+  const el=document.createElement('div');el.className='grade-card reveal-child';
+  el.innerHTML=`<div class="grade-hd"><span class="grade-name">${g.name}</span><span class="grade-ext">${g.ext}</span></div><div class="grade-screens"><div class="grade-side" style="background:${g.fb}"><div class="gs-label">Original</div>${g.fe}</div><div class="grade-mid"></div><div class="grade-side" style="background:${g.tb};filter:${g.tf}"><div class="gs-label">Graded</div>${g.te}</div></div>`;
+  gg.appendChild(el);
 });
 
-// When in grade view, clicking a clip card previews it
-document.addEventListener('click', e => {
-  const nav = document.querySelector('.nav-item.on');
-  if (!nav || nav.dataset.view !== 'grade') return;
-  if (!_activeGrade) return;
-  const card = e.target.closest('.frame[data-id]');
-  if (!card) return;
-  applyGradePreview(parseInt(card.dataset.id));
+// Animations
+const ANIMS=[{l:'Card stagger',k:'stagger'},{l:'Modal scale',k:'modal'},{l:'Quality bar',k:'bar'},{l:'Skeleton shimmer',k:'shimmer'},{l:'Scan pulse',k:'pulse'},{l:'Spring playhead',k:'spring'},{l:'Grade crossfade',k:'crossfade'},{l:'Film grain',k:'grain'},{l:'Card hover lift',k:'hover'},{l:'Panel slide-in',k:'detail'}];
+const ach=document.getElementById('anim-chips'),adm=document.getElementById('anim-demo');
+ANIMS.forEach(a=>{
+  const chip=document.createElement('div');chip.className='anim-chip';chip.innerHTML=`<div class="anim-dot"></div>${a.l}`;
+  chip.addEventListener('click',()=>{ach.querySelectorAll('.anim-chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');demoAnim(a.k);});
+  ach.appendChild(chip);
+});
+function mk(css,text=''){const d=document.createElement('div');d.style.cssText=css;d.textContent=text;return d;}
+function demoAnim(k){
+  adm.innerHTML='';adm.style.justifyContent='flex-start';
+  if(k==='stagger'){for(let i=0;i<6;i++)adm.appendChild(mk('display:inline-block;width:70px;height:40px;background:var(--panel-2);border:1px solid var(--border);border-radius:4px;margin:4px'));gsap.from(adm.children,{opacity:0,y:10,scale:.96,duration:.4,stagger:.07,ease:'power3.out'});}
+  else if(k==='modal'){adm.style.justifyContent='center';const b=mk('width:220px;height:60px;background:var(--panel-2);border:1px solid var(--border-m);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3)','Preview modal');adm.appendChild(b);gsap.fromTo(b,{scale:.92,opacity:0,y:8},{scale:1,opacity:1,y:0,duration:.32,ease:'power3.out'});}
+  else if(k==='bar'){adm.style.justifyContent='center';const w=mk('width:280px');w.innerHTML=`<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">Quality score: 8 / 10</div><div style="height:3px;background:var(--surface);border-radius:2px;overflow:hidden"><div id="qbar" style="height:100%;width:0%;background:var(--teal-b);border-radius:2px"></div></div>`;adm.appendChild(w);gsap.to('#qbar',{width:'80%',duration:.65,ease:'power2.out',delay:.1});}
+  else if(k==='shimmer'){adm.style.justifyContent='center';const b=mk('width:100%;max-width:280px;height:44px;border-radius:4px');b.className='shimmer';adm.appendChild(b);}
+  else if(k==='pulse'){adm.style.justifyContent='center';const d=mk('width:8px;height:8px;border-radius:50%;background:var(--teal-b)');adm.appendChild(d);let t=true,iv=setInterval(()=>{t=!t;d.style.boxShadow=t?'0 0 12px 4px rgba(34,211,187,.6)':'0 0 4px rgba(34,211,187,.25)';},550);setTimeout(()=>clearInterval(iv),3500);}
+  else if(k==='spring'){adm.style.justifyContent='center';const tr=mk('position:relative;height:20px;background:var(--surface);border-radius:4px;width:100%;max-width:320px;overflow:hidden');const hd=mk('position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--teal-b);border-radius:1px;left:0%;box-shadow:0 0 6px rgba(34,211,187,.5)');tr.appendChild(hd);adm.appendChild(tr);let pos=0,vel=0,target=0;(function loop(){const f=(target-pos)*.12;vel=vel*.8+f;pos+=vel;hd.style.left=Math.max(0,Math.min(97,pos*100)).toFixed(2)+'%';requestAnimationFrame(loop);})();let go=true,iv=setInterval(()=>{target=go?.93:.05;go=!go;},900);setTimeout(()=>clearInterval(iv),4500);}
+  else if(k==='crossfade'){adm.style.justifyContent='center';const w=mk('position:relative;width:200px;height:52px');const a=mk('position:absolute;inset:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3)','Original');const b=mk('position:absolute;inset:0;background:rgba(9,161,130,.12);border:1px solid var(--border-m);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal-b);opacity:0','Graded ✓');w.appendChild(a);w.appendChild(b);adm.appendChild(w);gsap.to(b,{opacity:1,duration:.9,delay:.4,ease:'power2.inOut'});}
+  else if(k==='grain'){adm.appendChild(mk('font-size:12px;color:var(--text-2)','Film grain runs on the canvas overlay covering this entire page — subtle static texture over the whole UI.'));}
+  else if(k==='hover'){adm.style.justifyContent='center';const c=mk('width:100px;height:60px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3);cursor:pointer;transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s','Hover me');c.addEventListener('mouseenter',()=>{c.style.transform='translateY(-3px)';c.style.boxShadow='var(--glow)';});c.addEventListener('mouseleave',()=>{c.style.transform='';c.style.boxShadow='';});adm.appendChild(c);}
+  else if(k==='detail'){adm.style.justifyContent='center';const p=mk('width:180px;background:var(--panel-2);border:1px solid var(--border-m);border-radius:6px;padding:14px;font-size:11px;color:var(--text-2)','Detail panel slides in');adm.appendChild(p);gsap.from(p,{x:40,opacity:0,duration:.28,ease:'power3.out'});}
+}
+
+// Stack
+['FastAPI','SQLite','GSAP 3.12','OpenCV','CLIP','Claude CLI','ffmpeg','Web Audio'].forEach(s=>{const t=document.createElement('div');t.className='stack-tag';t.textContent=s;document.getElementById('stack-list').appendChild(t);});
+document.getElementById('explore-btn').addEventListener('click',()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}));
+
+// ── ScrollTrigger (disko patterns) ──
+gsap.registerPlugin(ScrollTrigger);
+const mm = gsap.matchMedia();
+mm.add('(prefers-reduced-motion: no-preference)', () => {
+  // Pattern 1: .reveal — fade + rise
+  document.querySelectorAll('.reveal').forEach(el => {
+    gsap.fromTo(el,
+      { opacity: 0, y: 50 },
+      { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' }
+      }
+    );
+  });
+  // Pattern 2: .reveal-group + .reveal-child — stagger
+  document.querySelectorAll('.reveal-group').forEach(group => {
+    const children = group.querySelectorAll('.reveal-child');
+    gsap.fromTo(children,
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power2.out',
+        scrollTrigger: { trigger: group, start: 'top 85%', toggleActions: 'play none none none' }
+      }
+    );
+    // stats count-up on first enter
+    if (group.id === 'stats-grid') {
+      ScrollTrigger.create({
+        trigger: group, start: 'top 88%', once: true,
+        onEnter: () => group.querySelectorAll('.stat-n').forEach((el,i) => setTimeout(() => countUp(el,+el.dataset.n,900), i*80))
+      });
+    }
+  });
+  // Pattern 3: .feature-showcase — slide from side
+  document.querySelectorAll('.feature-showcase').forEach(el => {
+    const x = el.dataset.direction === 'right' ? 80 : -80;
+    gsap.fromTo(el,
+      { opacity: 0, x },
+      { opacity: 1, x: 0, duration: 1, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' }
+      }
+    );
+  });
+  // Pattern 4: .final-cta — scale pop
+  gsap.fromTo('.final-cta',
+    { opacity: 0, scale: 0.95 },
+    { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.5)',
+      scrollTrigger: { trigger: '.final-cta', start: 'top 85%', toggleActions: 'play none none none' }
+    }
+  );
+  return () => mm.revert();
 });
 </script>
-
 </body>
 </html>
